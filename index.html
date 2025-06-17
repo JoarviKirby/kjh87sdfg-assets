@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificador Mensual Anime Personalizable</title>
+    <!-- Librerías Externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script type="module" src="https://cdn.skypack.dev/canvas-confetti"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Homemade+Apple&family=Indie+Flower&family=Kalam:wght@300;400;700&family=Shadows+Into+Light&family=DynaPuff:wght@400;700&display=swap');
+
+        :root {
+            --paper: #fdfbfd;
+            --background: #f8f3f9;
+            --ink: #5a4b66;
+            --ink-editable: #5a4b66;
+            --accent-1: #c399d1; 
+            --accent-2: #ef9389; 
+            --accent-3: #acd4f0; 
+            --grid-line: rgba(195, 153, 209, 0.2);
+            --logo-color-1: #c399d1;
+            --logo-color-2: #ef9389;
+            --logo-color-3: #acd4f0;
+            --bg-opacity: 0.15;
+            --bg-size: contain;
+            --bg-pos-x: 50%;
+            --bg-pos-y: 50%;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Indie Flower', cursive;
+            background-color: var(--background);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: var(--ink);
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        .settings-panel {
+            width: 100%;
+            max-width: 1200px;
+            background-color: #fff;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem;
+            border: 1px solid #eee;
+            font-family: 'Kalam', cursive;
+        }
+
+        .control-group { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;}
+        .control-group label { font-size: 1.1rem; font-weight: 600; color: var(--ink); }
+        .control-group select, .control-group input[type="number"], .control-group input[type="url"], .control-group input[type="range"] { font-family: 'Kalam', cursive; font-size: 1rem; padding: 0.4rem 0.8rem; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; color: var(--ink); cursor: pointer; }
+        .control-group input[type="url"] { width: 250px; }
+        .control-group input[type="range"] { padding: 0; }
+        .control-group input[type="color"] { width: 40px; height: 40px; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; padding: 2px; background-color: transparent; -webkit-appearance: none; -moz-appearance: none; appearance: none; }
+        .control-group input[type="color"]::-webkit-color-swatch { border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 2px rgba(0,0,0,0.2); }
+        .control-group input[type="color"]::-moz-color-swatch { border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 2px rgba(0,0,0,0.2); }
+        
+        .action-buttons { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .action-btn { background-color: var(--accent-1); color: #fff; font-weight: 700; font-family: 'Kalam', cursive; font-size: 1rem; border: none; padding: 0.7rem 1.2rem; border-radius: 8px; cursor: pointer; transition: background-color 0.3s, opacity 0.3s, transform 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .action-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        #addTaskBtn { background-color: transparent; border: 2px solid var(--accent-2); color: var(--accent-2); }
+        #addTaskBtn:hover:not(:disabled) { background-color: var(--accent-2); color: #fff; }
+        #suggestActivitiesBtn { background-color: transparent; border: 2px solid var(--accent-3); color: var(--accent-3); }
+        #suggestActivitiesBtn:hover:not(:disabled) { background-color: var(--accent-3); color: #fff; }
+        .action-btn:disabled { background-color: #999; cursor: not-allowed; opacity: 0.7; }
+
+        .planner-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 1200px;
+            height: auto; 
+            min-height: 85vh;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(195, 153, 209, 0.2);
+            background: var(--paper);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        @media (min-width: 1024px) {
+            .planner-container {
+                flex-direction: row;
+            }
+        }
+        
+        .page {
+            flex: 1;
+            padding: 20px;
+            position: relative;
+        }
+        
+        #background-image-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: var(--bg-size);
+            background-position: var(--bg-pos-x) var(--bg-pos-y);
+            background-repeat: no-repeat;
+            opacity: var(--bg-opacity);
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        @media (min-width: 1024px) {
+             .page { border-right: 1px solid var(--grid-line); }
+        }
+
+        .page::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background-image: radial-gradient(rgba(195, 153, 209, 0.05) 1px, transparent 1px);
+            background-size: 10px 10px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .month-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom:15px;
+            position: relative;
+            z-index: 2;
+            gap: 20px;
+            min-height: 100px;
+        }
+
+        .logo-placeholder {
+            flex-shrink: 0;
+        }
+        
+        .text-logo {
+            font-family: 'DynaPuff', cursive;
+            line-height: 0.9;
+            position: relative;
+            width: 300px;
+            height: 100px;
+        }
+
+        .logo-part {
+            position: absolute;
+            font-weight: 700;
+        }
+        
+        #logo-emilie {
+            font-size: 2.5rem;
+            color: var(--logo-color-1);
+            top: 15px;
+            left: 0;
+        }
+        
+        #logo-ampersand {
+            font-size: 1.8rem;
+            color: var(--logo-color-2);
+            top: 35px;
+            left: 120px;
+        }
+        
+        #logo-estephany {
+            font-size: 2.5rem;
+            color: var(--logo-color-3);
+            top: 40px;
+            left: 140px;
+        }
+
+        .month-name {
+            font-family: 'Shadows Into Light', cursive;
+            font-size: 2.8rem;
+            font-weight: 600;
+            color: var(--accent-1);
+            text-shadow: 1px 1px 2px rgba(195, 153, 209, 0.2);
+            letter-spacing: 2px;
+            text-align: right;
+            flex-grow: 1;
+        }
+        
+        .calendar {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            position: relative;
+            z-index: 2;
+        }
+
+        .calendar th {
+            padding: 8px 0;
+            font-weight: normal;
+            color: var(--accent-1);
+            border-bottom: 1px solid var(--grid-line);
+            font-family: 'Kalam', cursive;
+            font-size: 0.8rem;
+        }
+        
+        .calendar td {
+            height: 90px;
+            border: 1px solid var(--grid-line);
+            vertical-align: top;
+            padding: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .epic-frame {
+            border: 4px solid gold !important;
+            box-shadow: 0 0 10px 3px rgba(255, 215, 0, 0.7), inset 0 0 10px rgba(255, 215, 0, 0.5);
+            z-index: 5;
+            overflow: hidden;
+        }
+
+        .confetti-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .day-number {
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            font-size: 0.9rem;
+            color: var(--accent-1);
+            opacity: 0.7;
+            font-family: 'Kalam', cursive;
+        }
+        
+        .stream-time {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            font-size: 0.6rem;
+            font-family: 'Kalam', 'cursive';
+            color: var(--accent-2);
+            background-color: rgba(255, 255, 255, 0.6);
+            padding: 1px 4px;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+
+        .note {
+            font-family: 'Shadows Into Light', cursive;
+            font-size: 0.85rem;
+            line-height: 1.3;
+            min-height: 20px;
+            height: 100%;
+            padding-top: 22px;
+            overflow-y: auto;
+            color: var(--ink-editable);
+        }
+        
+        [contenteditable]:hover { outline: 2px dashed var(--accent-3); }
+        [contenteditable]:focus { background-color: rgba(172, 212, 240, 0.2); outline: none; }
+
+
+        .sidebar {
+            width: 100%;
+            padding: 15px;
+            border-top: 1px solid var(--grid-line);
+            position: relative;
+            z-index: 2;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                width: 220px;
+                flex-shrink: 0;
+                border-left: 1px solid var(--grid-line);
+                border-top: none;
+            }
+        }
+        
+        .year {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--accent-2);
+            font-family: 'Shadows Into Light', cursive;
+            letter-spacing: 1px;
+        }
+
+        .tasks-header {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            text-align: center;
+            color: var(--accent-1);
+            font-family: 'Kalam', cursive;
+        }
+
+        .task-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-family: 'Shadows Into Light', cursive;
+            font-size: 0.8rem;
+            transform: rotate(1deg);
+            color: var(--ink-editable);
+        }
+
+        .task-item input[type="checkbox"] {
+            width: 12px;
+            height: 12px;
+            border: 1.5px solid var(--accent-1);
+            margin-right: 8px;
+            flex-shrink: 0;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .task-item input[type="checkbox"]:checked {
+            background-color: var(--accent-1);
+        }
+        .task-item span[contenteditable] {
+            flex-grow: 1;
+        }
+        .task-item span:focus {
+            background-color: rgba(172, 212, 240, 0.3);
+        }
+
+        .remove-task-btn {
+            background: none;
+            border: none;
+            font-family: 'Kalam', cursive;
+            font-size: 1.2rem;
+            color: var(--accent-2);
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.2s, transform 0.2s;
+            padding: 0 5px;
+            line-height: 1;
+        }
+        .remove-task-btn:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-panel">
+        <div class="control-group">
+            <label for="month-selector">Mes:</label>
+            <select id="month-selector"></select>
+            <label for="year-input">Año:</label>
+            <input type="number" id="year-input" min="1900" max="2100">
+        </div>
+        <div class="control-group">
+            <label>Colores del Logo:</label>
+            <input type="color" id="logo-color-1" title="Color 'Emilie'">
+            <input type="color" id="logo-color-2" title="Color '&'">
+            <input type="color" id="logo-color-3" title="Color 'Estephany'">
+        </div>
+        <div class="control-group">
+            <label>Otros Colores:</label>
+            <input type="color" id="accent-color-1" title="Color Principal">
+            <input type="color" id="accent-color-2" title="Líneas y Acentos">
+            <input type="color" id="paper-color" title="Color de Fondo">
+            <input type="color" id="ink-color" title="Color de Texto">
+        </div>
+         <div class="control-group">
+            <label for="background-image-url">Imagen de Fondo:</label>
+            <input type="url" id="background-image-url" placeholder="Pega la URL de una imagen aquí">
+        </div>
+        <div class="control-group">
+             <label for="background-opacity-slider">Opacidad:</label>
+            <input type="range" id="background-opacity-slider" min="0" max="1" step="0.05">
+             <label for="background-size-slider">Zoom:</label>
+            <input type="range" id="background-size-slider" min="20" max="200" value="100">
+             <label for="background-pos-x">Posición X/Y:</label>
+            <input type="range" id="background-pos-x" min="-50" max="150" value="50" title="Posición Horizontal">
+            <input type="range" id="background-pos-y" min="-50" max="150" value="50" title="Posición Vertical">
+        </div>
+        <div class="action-buttons">
+            <button id="suggestActivitiesBtn" class="action-btn">✨ Sugerir Actividades</button>
+            <button id="addTaskBtn" class="action-btn">Añadir Tarea</button>
+            <button id="downloadBtn" class="action-btn">Descargar PNG</button>
+        </div>
+    </div>
+
+    <div id="export-area" class="planner-container">
+        <div class="page" id="main-page">
+             <div id="background-image-container"></div>
+            <div class="page-content-wrapper">
+                <div class="month-header">
+                    <div class="logo-placeholder">
+                       <div class="text-logo">
+                           <span id="logo-emilie" class="logo-part">Emilie</span>
+                           <span id="logo-ampersand" class="logo-part">&</span>
+                           <span id="logo-estephany" class="logo-part">Estephany</span>
+                       </div>
+                    </div>
+                    <div id="month-name" class="month-name" contenteditable="true"></div>
+                </div>
+                <table class="calendar">
+                    <thead><tr><th>L</th><th>M</th><th>X</th><th>J</th><th>V</th><th>S</th><th>D</th></tr></thead>
+                    <tbody id="calendar-body"></tbody>
+                </table>
+            </div>
+        </div>
+        <aside class="sidebar">
+            <div id="year-display" class="year" contenteditable="true"></div>
+            <h3 class="tasks-header" contenteditable="true">Tareas / Tasks</h3>
+            <ul class="task-list"></ul>
+        </aside>
+    </div>
+
+<script type="module">
+    import confetti from "https://cdn.skypack.dev/canvas-confetti";
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const controls = {
+            month: document.getElementById('month-selector'),
+            year: document.getElementById('year-input'),
+            logoColor1: document.getElementById('logo-color-1'),
+            logoColor2: document.getElementById('logo-color-2'),
+            logoColor3: document.getElementById('logo-color-3'),
+            accentColor1: document.getElementById('accent-color-1'),
+            accentColor2: document.getElementById('accent-color-2'),
+            paperColor: document.getElementById('paper-color'),
+            inkColor: document.getElementById('ink-color'),
+            bgImageUrl: document.getElementById('background-image-url'),
+            bgOpacitySlider: document.getElementById('background-opacity-slider'),
+            bgSizeSlider: document.getElementById('background-size-slider'),
+            bgPosXSlider: document.getElementById('background-pos-x'),
+            bgPosYSlider: document.getElementById('background-pos-y'),
+            addTaskBtn: document.getElementById('addTaskBtn'),
+            downloadBtn: document.getElementById('downloadBtn'),
+            suggestActivitiesBtn: document.getElementById('suggestActivitiesBtn')
+        };
+
+        const display = {
+            planner: document.getElementById('export-area'),
+            monthName: document.getElementById('month-name'),
+            year: document.getElementById('year-display'),
+            calendarBody: document.getElementById('calendar-body'),
+            todoList: document.querySelector('.task-list'),
+            bgImageContainer: document.getElementById('background-image-container'),
+        };
+        
+        const monthData = {
+            names: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+        };
+        let taskCounter = 0;
+        let confettiInterval = null;
+        
+        function initialize() {
+            monthData.names.forEach((name, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = name;
+                controls.month.appendChild(option);
+            });
+            
+            controls.downloadBtn.disabled = true;
+            controls.downloadBtn.textContent = "Cargando...";
+
+            document.fonts.ready.then(() => {
+                controls.downloadBtn.disabled = false;
+                controls.downloadBtn.textContent = "Descargar PNG";
+                
+                const today = new Date();
+                controls.month.value = today.getMonth();
+                controls.year.value = today.getFullYear();
+
+                const rootStyle = getComputedStyle(document.documentElement);
+                controls.logoColor1.value = rootStyle.getPropertyValue('--logo-color-1').trim();
+                controls.logoColor2.value = rootStyle.getPropertyValue('--logo-color-2').trim();
+                controls.logoColor3.value = rootStyle.getPropertyValue('--logo-color-3').trim();
+                controls.accentColor1.value = rootStyle.getPropertyValue('--accent-1').trim();
+                controls.accentColor2.value = rootStyle.getPropertyValue('--accent-2').trim();
+                controls.paperColor.value = rootStyle.getPropertyValue('--paper').trim();
+                controls.inkColor.value = rootStyle.getPropertyValue('--ink-editable').trim();
+                controls.bgOpacitySlider.value = rootStyle.getPropertyValue('--bg-opacity').trim();
+                controls.bgSizeSlider.value = 100;
+                controls.bgPosXSlider.value = 50;
+                controls.bgPosYSlider.value = 50;
+
+                
+                updateFullDisplay();
+
+                for(let i=0; i<5; i++) {
+                    addTask(i === 0 ? "¡Planificar el mes!" : "...");
+                }
+            });
+            
+            // --- Event Listeners ---
+            controls.month.addEventListener('change', updateFullDisplay);
+            controls.year.addEventListener('input', updateFullDisplay);
+            
+            controls.logoColor1.addEventListener('input', () => updateCssVariable('--logo-color-1', controls.logoColor1.value));
+            controls.logoColor2.addEventListener('input', () => updateCssVariable('--logo-color-2', controls.logoColor2.value));
+            controls.logoColor3.addEventListener('input', () => updateCssVariable('--logo-color-3', controls.logoColor3.value));
+            controls.accentColor1.addEventListener('input', () => updateCssVariable('--accent-1', controls.accentColor1.value));
+            
+            controls.accentColor2.addEventListener('input', () => {
+                const colorValue = controls.accentColor2.value;
+                updateCssVariable('--accent-2', colorValue);
+                const rgb = hexToRgb(colorValue);
+                if (rgb) {
+                    updateCssVariable('--grid-line', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`);
+                }
+            });
+            
+            controls.paperColor.addEventListener('input', () => updateCssVariable('--paper', controls.paperColor.value));
+            controls.inkColor.addEventListener('input', () => updateCssVariable('--ink-editable', controls.inkColor.value));
+            controls.bgImageUrl.addEventListener('input', (e) => (display.bgImageContainer.style.backgroundImage = `url(${e.target.value})`));
+            controls.bgOpacitySlider.addEventListener('input', (e) => updateCssVariable('--bg-opacity', e.target.value));
+            controls.bgSizeSlider.addEventListener('input', (e) => updateCssVariable('--bg-size', `${e.target.value}%`));
+            controls.bgPosXSlider.addEventListener('input', (e) => updateCssVariable('--bg-pos-x', `${e.target.value}%`));
+            controls.bgPosYSlider.addEventListener('input', (e) => updateCssVariable('--bg-pos-y', `${e.target.value}%`));
+
+            controls.addTaskBtn.addEventListener('click', () => addTask('Nueva tarea'));
+            controls.downloadBtn.addEventListener('click', handleDownload);
+            controls.suggestActivitiesBtn.addEventListener('click', handleSuggestActivities);
+            
+            display.todoList.addEventListener('click', function(e) {
+                if (e.target.matches('.remove-task-btn')) {
+                    e.target.closest('.task-item')?.remove();
+                }
+            });
+        }
+
+        function updateFullDisplay() {
+            if (confettiInterval) {
+                clearInterval(confettiInterval);
+                confettiInterval = null;
+            }
+            const year = parseInt(controls.year.value);
+            const month = parseInt(controls.month.value);
+            if (isNaN(year) || isNaN(month)) return;
+
+            display.monthName.textContent = monthData.names[month].toUpperCase();
+            display.year.textContent = year;
+            generateCalendar(year, month);
+        }
+
+        function generateCalendar(year, month) {
+            display.calendarBody.innerHTML = '';
+            const firstDay = new Date(year, month, 1);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            let startingDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; 
+            
+            let date = 1;
+            let row = document.createElement('tr');
+            display.calendarBody.appendChild(row);
+
+            for (let i = 0; i < startingDay; i++) {
+                const cell = document.createElement('td');
+                cell.classList.add('empty-day');
+                row.appendChild(cell);
+            }
+
+            while (date <= daysInMonth) {
+                if (row.children.length === 7) {
+                    row = document.createElement('tr');
+                    display.calendarBody.appendChild(row);
+                }
+
+                const cell = document.createElement('td');
+                let noteContent = '';
+                let cellHTML = `<div class="day-number">${date}</div>`;
+                
+                const currentDayOfWeek = new Date(year, month, date).getDay();
+                if ([1, 3, 5, 6].includes(currentDayOfWeek)) {
+                    cellHTML += `<div class="stream-time">Stream 5:30pm MX</div>`;
+                }
+                
+                if (month === 9 && date === 25) { 
+                    cell.classList.add('epic-frame');
+                    cellHTML += '<canvas class="confetti-canvas"></canvas>';
+                }
+
+                cellHTML += `<div class="note" contenteditable="true">${noteContent}</div>`;
+                cell.innerHTML = cellHTML;
+
+                row.appendChild(cell);
+                date++;
+            }
+            
+            while (row.children.length > 0 && row.children.length < 7) {
+                 const cell = document.createElement('td');
+                 cell.classList.add('empty-day');
+                 row.appendChild(cell);
+            }
+            
+            if (month === 9) {
+                const birthdayCell = display.calendarBody.querySelector('.epic-frame');
+                if (birthdayCell) {
+                   startBirthdayConfetti(birthdayCell);
+                }
+            }
+        }
+        
+        function startBirthdayConfetti(targetCell) {
+            if (confettiInterval || !targetCell) return;
+            const canvas = targetCell.querySelector('.confetti-canvas');
+            if(!canvas) return;
+
+            const myConfetti = confetti.create(canvas, {
+                resize: true,
+                useWorker: true
+            });
+
+            const defaults = { 
+                spread: 360, 
+                ticks: 100,
+                gravity: 0.1, 
+                decay: 0.98,
+                startVelocity: 10,
+                zIndex: 10 
+            };
+
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            confettiInterval = setInterval(function() {
+                const particleCount = 10;
+                const colors = [controls.logoColor1.value, controls.logoColor2.value, controls.logoColor3.value, '#ffd700'];
+                
+                myConfetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.9), y: Math.random() - 0.2 }, colors: colors }));
+            }, 800);
+        }
+
+
+        function updateCssVariable(variable, value) {
+            document.documentElement.style.setProperty(variable, value);
+        }
+        
+        function hexToRgb(hex) {
+            let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function addTask(text) {
+            taskCounter++;
+            const newLi = document.createElement('li');
+            newLi.classList.add('task-item');
+            newLi.innerHTML = `<input type="checkbox" id="task${taskCounter}"> <span contenteditable="true">${text}</span><button class="remove-task-btn" title="Quitar tarea">×</button>`;
+            display.todoList.appendChild(newLi);
+        }
+        
+        async function handleSuggestActivities() {
+            const button = controls.suggestActivitiesBtn;
+            button.disabled = true;
+            button.textContent = "Sugiriendo...";
+
+            const monthName = monthData.names[controls.month.value];
+            const daysInMonth = new Date(controls.year.value, controls.month.value + 1, 0).getDate();
+            const prompt = `Genera una lista de 5 a 7 actividades creativas y divertidas con una temática "anime" o "kawaii" para el mes de ${monthName}. No incluyas actividades que duren más de un día. Asegúrate de que los días estén dentro del rango de 1 a ${daysInMonth}.`;
+            
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "activities": {
+                                "type": "ARRAY",
+                                "items": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "day": { "type": "INTEGER", "description": "El número del día en el mes." },
+                                        "activity": { "type": "STRING", "description": "La descripción de la actividad." }
+                                    },
+                                    "required": ["day", "activity"]
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            try {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error en la API: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    
+                    const jsonText = result.candidates[0].content.parts[0].text;
+                    const parsedJson = JSON.parse(jsonText);
+                    const activities = parsedJson.activities;
+                    
+                    if(activities && activities.length > 0) {
+                        const allDayCells = display.calendarBody.querySelectorAll('td:not(.empty-day)');
+                        activities.forEach(item => {
+                            if (item.day <= daysInMonth && !(item.day === 25 && controls.month.value === '9')) { 
+                                allDayCells.forEach(cell => {
+                                    const dayNumEl = cell.querySelector('.day-number');
+                                    if(dayNumEl && parseInt(dayNumEl.textContent) === item.day) {
+                                        const noteEl = cell.querySelector('.note');
+                                        if(noteEl) {
+                                            noteEl.innerHTML += `${noteEl.innerHTML ? '<br>' : ''}✨ ${item.activity}`;
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                } else {
+                    throw new Error("Respuesta inesperada de la API.");
+                }
+
+            } catch (error) {
+                console.error("Error al obtener sugerencias:", error);
+                button.textContent = "Error";
+                setTimeout(() => {
+                    button.disabled = false;
+                    button.textContent = "✨ Sugerir Actividades";
+                }, 2000);
+                return;
+            }
+
+            button.disabled = false;
+            button.textContent = "✨ Sugerir Actividades";
+        }
+
+        function handleDownload() {
+            const downloadButton = controls.downloadBtn;
+            downloadButton.textContent = "Generando...";
+            downloadButton.disabled = true;
+
+            setTimeout(() => {
+                if (confettiInterval) clearInterval(confettiInterval);
+
+                html2canvas(document.getElementById('export-area'), {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--paper').trim(),
+                    onclone: (clonedDoc) => {
+                        const activeElement = clonedDoc.activeElement;
+                        if(activeElement && activeElement.blur) {
+                           activeElement.blur();
+                        }
+                    }
+                })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `planificador-${controls.year.value}-${monthData.names[controls.month.value]}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    downloadButton.textContent = "Descargar PNG";
+                    downloadButton.disabled = false;
+                    updateFullDisplay();
+                }).catch(err => {
+                    console.error("Error al generar el canvas: ", err);
+                    downloadButton.textContent = "Error";
+                    setTimeout(() => { 
+                        downloadButton.textContent = "Descargar PNG"; 
+                        downloadButton.disabled = false; 
+                    }, 2000);
+                     updateFullDisplay();
+                });
+            }, 500);
+        }
+
+        // --- Start the application ---
+        initialize();
+    });
+</script>
+</body>
+</html>
