@@ -1,306 +1,1060 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clon de TikTok</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-            font-family: 'Inter', sans-serif;
-            background-color: #000;
-        }
-        .media-container {
-            height: 100vh;
-            width: 100vw;
-            scroll-snap-type: y mandatory;
-            overflow-y: scroll;
-            overflow-x: hidden;
-        }
-        .media-item {
-            height: 100vh;
-            width: 100vw;
-            scroll-snap-align: start;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        video, img {
-            max-width: 100vw;
-            max-height: 100vh;
-            width: auto;
-            height: auto;
-        }
-        .media-container::-webkit-scrollbar { display: none; }
-        .media-container { -ms-overflow-style: none; scrollbar-width: none; }
-        .overlay-content { text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planificador Mensual Personalizable</title>
 
-        .interactive-ui {
-            transition: opacity 0.4s ease-in-out;
-        }
-        .interactive-ui.fade-out {
-            opacity: 0;
-            pointer-events: none;
-        }
+  <!-- Librerías Externas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-        /* --- Barra de Progreso --- */
-        .progress-bar-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            padding: 0 1rem 1rem 1rem;
-            box-sizing: border-box;
-        }
-        input[type="range"].progress-bar {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 5px;
-            outline: none;
-            cursor: pointer;
-        }
-        input[type="range"].progress-bar::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            background: #fff;
-            border-radius: 50%;
-        }
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Homemade+Apple&family=Indie+Flower&family=Kalam:wght@300;400;700&family=Shadows+Into+Light&family=DynaPuff:wght@400;700&display=swap');
 
-        /* --- Control de Volumen --- */
-        .volume-control-container {
-            position: relative;
-        }
-        .volume-slider {
-            display: none;
-            position: absolute;
-            bottom: 45px; /* Encima del icono */
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
-            padding: 10px 5px;
-        }
-        .volume-control-container:hover .volume-slider {
-            display: block;
-        }
-        input[type="range"].volume-bar {
-            -webkit-appearance: none;
-            background: transparent;
-            cursor: pointer;
-            width: 100px; /* Ancho del contenedor vertical */
-        }
-        input[type="range"].volume-bar:focus { outline: none; }
-        /* Escritura vertical */
-        input[type="range"].volume-bar {
-            writing-mode: bt-lr; /* IE */
-            -webkit-appearance: slider-vertical; /* WebKit */
-        }
+    :root {
+      --paper: #000000;
+      --background: #111111;
+      --ink: #8c00ff;
+      --ink-editable: #8c00ff;
+      --accent-1: #e494ff;
+      --accent-2: #ef9389;
+      --accent-3: #7bc5f9;
+      --grid-line: rgba(239, 147, 137, 0.2);
+      --logo-color-1: #ff8ae0;
+      --logo-color-2: #ef9389;
+      --logo-color-3: #7bc5f9;
+      --bg-opacity: 0.15;
+      --bg-size: contain;
+      --bg-pos-x: 50%;
+      --bg-pos-y: 50%;
+      --glow-intensity: 1;
+      --main-page-height: 50vh;
+    }
 
-    </style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Indie Flower', cursive;
+      background-color: var(--background);
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      min-height: 100vh; overflow-x: hidden; color: var(--ink); padding: 20px; gap: 20px;
+    }
+
+    /* Notification Bar */
+    #notification-bar {
+      position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+      background-color: #333; color: white; padding: 12px 20px; border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: top 0.5s ease-in-out; z-index: 1001;
+      font-family: 'Kalam', cursive; text-align: center;
+    }
+
+    /* Panel de ajustes */
+    .settings-panel {
+      width: 100%; max-width: 1200px; background-color: #fff; padding: 1rem 1.5rem; border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; justify-content: space-between;
+      align-items: center; gap: 1.5rem; border: 1px solid #eee; font-family: 'Kalam', cursive;
+      --ink: #5a4b66; --accent-1: #c399d1; --accent-2: #ef9389; --accent-3: #acd4f0;
+    }
+    .settings-controls-wrapper { display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem; flex: 1; }
+    .control-group { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;}
+    .control-group label { font-size: 1.1rem; font-weight: 600; color: var(--ink); }
+    .control-group select, .control-group input[type="number"], .control-group input[type="url"], .control-group input[type="range"] {
+      font-family: 'Kalam', cursive; font-size: 1rem; padding: 0.4rem 0.8rem; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; color: var(--ink); cursor: pointer;
+    }
+    .control-group input[type="url"]{ width: 250px; }
+    .control-group input[type="range"]{ padding: 0; }
+    .control-group input[type="color"]{ width: 40px; height: 40px; border: 1px solid #ddd; border-radius: 50%; cursor: pointer; padding: 2px; background: transparent; appearance: none; -webkit-appearance: none; }
+    .control-group input[type="color"]::-webkit-color-swatch { border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 2px rgba(0,0,0,0.2); }
+    .control-group input[type="color"]::-moz-color-swatch { border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 2px rgba(0,0,0,0.2); }
+
+    .action-buttons{ display:flex; gap:1rem; flex-wrap:wrap; flex-shrink:0; align-items:center; }
+    .action-btn{ background-color: var(--accent-1); color:#fff; font-weight:700; font-family:'Kalam',cursive; font-size:1rem; border:none; padding:0.7rem 1.2rem; border-radius:8px; cursor:pointer;
+      transition:.2s; box-shadow:0 2px 5px rgba(0,0,0,.1); }
+    .action-btn:hover:not(:disabled){ transform: translateY(-2px); }
+    #downloadBtn{ background:transparent; border:2px solid var(--accent-1); color:var(--accent-1); }
+    #downloadBtn:hover:not(:disabled){ background:var(--accent-1); color:#fff; }
+    #addTaskBtn{ background:transparent; border:2px solid var(--accent-2); color:var(--accent-2); }
+    #addTaskBtn:hover:not(:disabled){ background:var(--accent-2); color:#fff; }
+    #toggleSidebarBtn,#saveJsonBtn,#loadJsonBtn,#addArrowBtn,#addItemBtn{ background:transparent; border:2px solid var(--accent-3); color:var(--accent-3); }
+    #toggleSidebarBtn:hover:not(:disabled),#saveJsonBtn:hover:not(:disabled),#loadJsonBtn:hover:not(:disabled),#addArrowBtn:hover:not(:disabled),#addItemBtn:hover:not(:disabled){ background:var(--accent-3); color:#fff; }
+    .action-btn:disabled{ background:#999; cursor:not-allowed; opacity:.7; }
+    #save-status { transition: opacity 0.5s ease-in-out; }
+
+    .planner-container { display:flex; flex-direction:column; width:100%; max-width:1200px; position:relative; box-shadow:0 10px 30px rgba(195,153,209,.2); background:var(--paper); border-radius:5px; overflow:hidden; transition: box-shadow .3s; }
+    #calendar-wrapper { display:flex; flex-direction:column; flex:1; }
+    #main-page.with-next-month{ border-bottom:1px solid var(--grid-line); }
+
+    @media (min-width:1024px){ .planner-container{flex-direction:row;} #calendar-wrapper{ border-right:1px solid var(--grid-line);} }
+
+    .page{ padding:20px; position:relative; min-height:var(--main-page-height); }
+    #next-month-page{ min-height:auto; }
+    .page-content-wrapper{ position:relative; }
+
+    #background-image-container{ position:absolute; top:0; left:0; width:100%; height:100%; background-size:var(--bg-size); background-position:var(--bg-pos-x) var(--bg-pos-y); background-repeat:no-repeat; opacity:var(--bg-opacity); pointer-events:none; z-index:1; }
+
+    .page::after{ content:''; position:absolute; inset:0; background-image: radial-gradient(rgba(195,153,209,.05) 1px, transparent 1px); background-size:10px 10px; pointer-events:none; z-index:1; }
+
+    .month-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; position:relative; z-index:2; gap:20px; min-height:100px; }
+    .logo-placeholder{ flex-shrink:0; }
+    .text-logo{ font-family:'DynaPuff',cursive; line-height:.9; position:relative; width:300px; height:100px; }
+    .logo-part{ position:absolute; font-weight:700; transition:text-shadow .3s; }
+    #logo-emilie{ font-size:2.5rem; color:var(--logo-color-1); top:15px; left:0; }
+    #logo-ampersand{ font-size:1.8rem; color:var(--logo-color-2); top:35px; left:120px; }
+    #logo-estephany{ font-size:2.5rem; color:var(--logo-color-3); top:40px; left:140px; }
+
+    .month-year-container{ display:flex; flex-direction:column; align-items:flex-end; flex-grow:1; }
+    .month-name{ font-family:'Shadows Into Light',cursive; font-size:2.8rem; font-weight:600; color:var(--accent-1); text-shadow:1px 1px 2px rgba(195,153,209,.2); letter-spacing:2px; text-align:right; transition:text-shadow .3s; }
+
+    .calendar{ width:100%; border-collapse:collapse; table-layout:fixed; position:relative; z-index:2; }
+    .calendar th{ padding:8px 0; font-weight:normal; color:var(--accent-1); border-bottom:1px solid var(--grid-line); font-family:'Kalam',cursive; font-size:.8rem; transition:text-shadow .3s; }
+    .calendar td{ height:90px; border:1px solid var(--grid-line); vertical-align:top; padding:5px; position:relative; overflow:hidden; }
+
+    .epic-frame{ border:2px solid gold !important; box-shadow:0 0 10px 3px rgba(255,215,0,.7), inset 0 0 10px rgba(255,215,0,.5); z-index:5; overflow:hidden; }
+    .confetti-canvas{ position:absolute; inset:0; pointer-events:none; z-index:10; }
+
+    .day-number{ position:absolute; top:4px; right:6px; font-size:.9rem; color:var(--accent-1); opacity:.7; font-family:'Kalam',cursive; transition:text-shadow .3s; }
+    .stream-time{ position:absolute; top:6px; left:6px; font-size:.6rem; font-family:'Kalam','cursive'; color:var(--accent-2); padding:1px 4px; border-radius:4px; font-weight:700; transition:text-shadow .3s; }
+
+    .note{ font-family:'Shadows Into Light',cursive; font-size:14px; line-height:1.3; min-height:20px; height:100%; padding-top:22px; overflow-y:auto; color:var(--ink-editable); transition:text-shadow .3s; }
+    [contenteditable]:hover{ outline:2px dashed var(--accent-3); }
+    [contenteditable]:focus{ background-color: rgba(172,212,240,.2); outline:none; }
+
+    .sidebar{ width:100%; padding:15px; border-top:1px solid var(--grid-line); position:relative; z-index:2; }
+    @media (min-width:1024px){ .sidebar{ width:220px; flex-shrink:0; border-left:1px solid var(--grid-line); border-top:none; } }
+
+    .year{ text-align:right; font-size:1.8rem; font-weight:700; margin:-10px 0 0 0; color:var(--accent-2); font-family:'Shadows Into Light',cursive; letter-spacing:1px; transition:text-shadow .3s; padding-right:2px; }
+    .tasks-header{ font-size:.9rem; margin-bottom:10px; text-align:center; color:var(--accent-1); font-family:'Kalam',cursive; transition:text-shadow .3s; }
+
+    .task-list{ list-style:none; padding:0; }
+    .task-item{ display:flex; align-items:center; gap:8px; margin-bottom:8px; font-family:'Shadows Into Light',cursive; font-size:.8rem; transform:rotate(1deg); color:var(--ink-editable); transition:text-shadow .3s; }
+    .task-item input[type="checkbox"]{ width:12px; height:12px; border:1.5px solid var(--accent-1); margin-right:8px; flex-shrink:0; appearance:none; cursor:pointer; transition: background-color .2s; }
+    .task-item input[type="checkbox"]:checked{ background-color:var(--accent-1); }
+    .task-item span[contenteditable]{ flex-grow:1; }
+    .task-item span:focus{ background-color: rgba(172,212,240,.3); }
+    .remove-task-btn{ background:none; border:none; font-family:'Kalam',cursive; font-size:1.2rem; color:var(--accent-2); cursor:pointer; opacity:.5; transition:.2s; padding:0 5px; line-height:1; }
+    .remove-task-btn:hover{ opacity:1; transform:scale(1.2); }
+
+    #individual-note-editor{ flex-wrap:nowrap; }
+    #individual-font-size-input{ width:100px; }
+    #individual-font-size-display{ width:40px; text-align:left; }
+
+    /* Switch */
+    .switch{ position:relative; display:inline-block; width:50px; height:28px; }
+    .switch input{ opacity:0; width:0; height:0; }
+    .slider{ position:absolute; cursor:pointer; inset:0; background:#ccc; transition:.4s; border-radius:28px; }
+    .slider:before{ position:absolute; content:""; height:20px; width:20px; left:4px; bottom:4px; background:#fff; transition:.4s; border-radius:50%; }
+    input:checked + .slider{ background-color: var(--accent-1); }
+    input:checked + .slider:before{ transform:translateX(22px); }
+
+    /* Glow */
+    body.glow-mode .planner-container{ box-shadow:0 0 calc(var(--glow-intensity)*5px) var(--accent-1), 0 0 calc(var(--glow-intensity)*10px) var(--accent-1), 0 0 calc(var(--glow-intensity)*15px) var(--accent-3), inset 0 0 calc(var(--glow-intensity)*4px) var(--accent-1); }
+    body.glow-mode .logo-part, body.glow-mode .month-name, body.glow-mode .year, body.glow-mode .tasks-header, body.glow-mode .day-number, body.glow-mode .calendar th{ text-shadow:0 0 calc(var(--glow-intensity)*4px) currentColor, 0 0 calc(var(--glow-intensity)*8px) currentColor; }
+    body.glow-mode .note, body.glow-mode .task-item span{ text-shadow:0 0 calc(var(--glow-intensity)*3px) var(--ink-editable), 0 0 calc(var(--glow-intensity)*5px) var(--ink-editable); }
+    body.glow-mode .stream-time{ text-shadow:0 0 calc(var(--glow-intensity)*3px) var(--accent-2), 0 0 calc(var(--glow-intensity)*5px) var(--accent-2); }
+    body.glow-mode .draggable-arrow, body.glow-mode .draggable-item{ filter: drop-shadow(0 0 calc(var(--glow-intensity)*4px) var(--ink-editable)); }
+
+    /* Elementos arrastrables */
+    #elements-container{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:5; }
+    .draggable-arrow,.draggable-item{ position:absolute; cursor:move; pointer-events:all; display:flex; justify-content:center; align-items:center; transition:filter .3s; }
+    .draggable-arrow{ width:150px; height:150px; color:var(--ink-editable); }
+    .draggable-item{ width:100px; height:100px; }
+    .draggable-arrow.selected,.draggable-item.selected{ outline: 2px dashed var(--accent-3); }
+    .draggable-arrow svg,.draggable-item svg,.draggable-item img{ width:100%; height:100%; display:block; }
+    .draggable-item img{ object-fit:contain; }
+    .draggable-arrow .arrow-path{ stroke:none; fill:currentColor; }
+    .draggable-item.color-override svg [fill]:not([fill="none"]){ fill: currentColor !important; }
+    .draggable-item.color-override svg [stroke]:not([stroke="none"]){ stroke: currentColor !important; }
+
+    .resizer{ position:absolute; width:10px; height:10px; background:var(--accent-3); border:1px solid #fff; border-radius:50%; display:none; }
+    .draggable-arrow.selected .resizer, .draggable-item.selected .resizer{ display:block; }
+    .resizer.bottom-right{ bottom:-5px; right:-5px; cursor:se-resize; }
+
+    .arrow-controls{ position:absolute; top:-30px; left:50%; transform:translateX(-50%); display:none; gap:5px; background:#fff; padding:5px; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,.2); align-items:center; }
+    .draggable-arrow.selected .arrow-controls, .draggable-item.selected .arrow-controls{ display:flex; }
+    .arrow-controls button{ background:var(--accent-1); color:#fff; border:none; border-radius:5px; cursor:pointer; width:25px; height:25px; font-family:sans-serif; font-weight:bold; font-size:1.2rem; line-height:1; }
+    .arrow-controls input[type="color"]{ width:25px; height:25px; padding:1px; border:1px solid #ddd; border-radius:5px; }
+    .arrow-controls button.delete-arrow-btn{ background-color: var(--accent-2); }
+
+    /* === Auth UI (toolbar + modal) === */
+    .auth-toolbar{
+      width:100%;max-width:1200px;display:flex;justify-content:flex-end;gap:.5rem;
+      align-items:center;margin-top:-6px
+    }
+    .auth-toolbar .pill{
+      font-family:'Kalam',cursive;border:1px solid #ddd;border-radius:999px;padding:.35rem .8rem;background:#fff;cursor:pointer
+    }
+    .auth-toolbar .pill.primary{border-color:#c399d1;color:#6b3fa1}
+    .auth-toolbar .pill.danger{border-color:#ef9389;color:#b54c44}
+    .auth-toolbar .status{font-size:.95rem;color:#555;margin-right:.5rem}
+    #auth-modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:1002
+    }
+    #auth-modal{
+      width:95%;max-width:420px;background:#fff;border-radius:12px;padding:1rem 1.2rem;box-shadow:0 10px 30px rgba(0,0,0,.25);font-family:'Kalam',cursive
+    }
+    #auth-modal h3{margin:0 0 .5rem 0}
+    #auth-modal form{display:flex;flex-direction:column;gap:.6rem}
+    #auth-modal input{
+      padding:.55rem .75rem;border:1px solid #ddd;border-radius:8px;font-family:'Kalam',cursive
+    }
+    #auth-modal .row{display:flex;gap:.6rem}
+    #auth-modal button{
+      padding:.6rem .9rem;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-family:'Kalam',cursive
+    }
+    #auth-modal .primary{background:#c399d1;color:#fff}
+    #auth-modal .ghost{background:transparent;border:2px solid #acd4f0;color:#4c6e84}
+    #auth-close{background:transparent;border:none;font-size:1.3rem;cursor:pointer;float:right;color:#888}
+  </style>
 </head>
 <body>
 
-    <div id="unmute-overlay" class="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 cursor-pointer">
-        <div class="text-white text-center">
-            <svg class="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-            <p class="mt-4 text-xl font-semibold">Toca para activar el sonido</p>
+  <!-- Notification Bar -->
+  <div id="notification-bar"></div>
+
+  <!-- ===== Toolbar de Autenticación ===== -->
+  <div class="auth-toolbar" id="auth-toolbar" style="display:flex;">
+    <span class="status" id="auth-status">No has iniciado sesión</span>
+    <button class="pill primary" id="auth-open">Iniciar sesión</button>
+    <button class="pill" id="cloud-load" title="Cargar desde la nube">Cargar nube</button>
+    <button class="pill" id="cloud-save" title="Guardar manual ahora">Guardar ahora</button>
+    <button class="pill danger" id="auth-logout" style="display:none;">Cerrar sesión</button>
+  </div>
+
+  <!-- ===== Modal simple de login/signup ===== -->
+  <div id="auth-modal-backdrop">
+    <div id="auth-modal">
+      <button id="auth-close" title="Cerrar">×</button>
+      <h3>Entrar a tu cuenta</h3>
+      <form id="auth-form">
+        <input type="email" id="auth-email" placeholder="Correo" required />
+        <input type="password" id="auth-password" placeholder="Contraseña" required />
+        <div class="row">
+          <button type="submit" class="primary" id="auth-login">Iniciar sesión</button>
+          <button type="button" class="ghost" id="auth-signup">Crear cuenta</button>
         </div>
+      </form>
+      <p style="font-size:.9rem;color:#666;margin-top:.5rem">Tu contenido se guardará en tu espacio privado.</p>
     </div>
+  </div>
 
-    <div id="media-feed" class="media-container">
-        <!-- El contenido se insertará aquí -->
+  <div class="settings-panel">
+    <div class="settings-controls-wrapper">
+      <div class="control-group">
+        <label for="month-selector">Mes:</label>
+        <select id="month-selector"></select>
+        <label for="year-input">Año:</label>
+        <input type="number" id="year-input" min="1900" max="2100">
+      </div>
+      <div class="control-group">
+        <label>Colores del Logo:</label>
+        <input type="color" id="logo-color-1" title="Color 'Emilie'">
+        <input type="color" id="logo-color-2" title="Color '&'">
+        <input type="color" id="logo-color-3" title="Color 'Estephany'">
+      </div>
+      <div class="control-group">
+        <label>Otros Colores:</label>
+        <input type="color" id="accent-color-1" title="Color Principal">
+        <input type="color" id="accent-color-2" title="Líneas y Acentos">
+        <input type="color" id="paper-color" title="Color de Fondo">
+        <input type="color" id="ink-color" title="Color de Texto">
+      </div>
+      <div class="control-group">
+        <label for="background-image-url">Imagen de Fondo:</label>
+        <input type="url" id="background-image-url" placeholder="Pega la URL de una imagen aquí">
+      </div>
+      <div class="control-group">
+        <label for="item-url">Ícono/Imagen:</label>
+        <input type="url" id="item-url" placeholder="URL de SVG o imagen">
+      </div>
+      <div class="control-group">
+        <label for="background-opacity-slider">Opacidad:</label>
+        <input type="range" id="background-opacity-slider" min="0" max="1" step="0.05">
+        <label for="background-size-slider">Zoom:</label>
+        <input type="range" id="background-size-slider" min="20" max="200" value="100">
+        <label for="background-pos-x">Posición X/Y:</label>
+        <input type="range" id="background-pos-x" min="-50" max="150" value="50" title="Posición Horizontal">
+        <input type="range" id="background-pos-y" min="-50" max="150" value="50" title="Posición Vertical">
+      </div>
+      <div id="individual-note-editor" class="control-group" style="display: none; border-left: 2px solid var(--accent-3); padding-left: 1rem;">
+        <label id="editing-day-label" for="individual-font-size-input">Fuente (Día X):</label>
+        <input type="range" id="individual-font-size-input" min="10" max="24" step="1" value="14">
+        <span id="individual-font-size-display">14px</span>
+      </div>
+      <div class="control-group">
+        <label for="glow-toggle">Efecto Glow:</label>
+        <label class="switch">
+          <input type="checkbox" id="glow-toggle"><span class="slider"></span>
+        </label>
+        <label for="glow-intensity-slider" style="margin-left: 1rem;">Intensidad:</label>
+        <input type="range" id="glow-intensity-slider" min="0.5" max="2" step="0.1" value="1">
+      </div>
+      <div class="control-group">
+        <label for="main-page-height-slider">Altura Calendario:</label>
+        <input type="range" id="main-page-height-slider" min="50" max="150" value="50">
+        <label for="show-next-month-toggle" style="margin-left: 1rem;">Mostrar mes siguiente:</label>
+        <label class="switch">
+          <input type="checkbox" id="show-next-month-toggle"><span class="slider"></span>
+        </label>
+      </div>
     </div>
+    <div class="action-buttons">
+      <button id="addArrowBtn" class="action-btn">Añadir Flecha</button>
+      <button id="addItemBtn" class="action-btn">Añadir Ícono</button>
+      <button id="addTaskBtn" class="action-btn">Añadir Tarea</button>
+      <button id="downloadBtn" class="action-btn">Descargar PNG</button>
+      <button id="toggleSidebarBtn" class="action-btn">Ocultar Panel</button>
+      <button id="saveJsonBtn" class="action-btn">💾 Guardar Local</button>
+      <button id="loadJsonBtn" class="action-btn">📂 Cargar Local</button>
+      <input type="file" id="json-upload" accept="application/json" style="display: none;">
+      <div id="save-status" style="font-family:'Kalam',cursive;color:#555;font-size:0.9rem;display:flex;align-items:center;padding-left:10px;opacity:0;"></div>
+    </div>
+  </div>
 
-    <script>
-        const usersData = [
-             {
-                user: 'Axl240500',
-                profilePic: 'https://cdn.discordapp.com/avatars/1271355578572210307/d6aa48ed152b2ac9670fe8a09abf629e.webp?size=80',
-                media: [{ type: 'image', url: 'https://media.discordapp.net/attachments/960621081436225557/1425178873045188712/Screenshot_2025-10-07-11-50-53-018_com.zhiliaoapp.musically-edit.jpg?ex=68f130c1&is=68efdf41&hm=cca46245817384db729dd82183c4aa1d31626ead7fcd9b3bc7a748e1b96e2ae4&=&format=webp&width=500&height=778', description: 'Viendo un poco...' }]
-            },
-            {
-                user: 'RiveraJonathan949',
-                profilePic: 'https://cdn.discordapp.com/avatars/689665456289742903/7c05174c8b45fecd847d58d5d52d537f.webp?size=80',
-                media: [{ type: 'image', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1425924120327094352/1760030284591.jpg?ex=68f143d2&is=68eff252&hm=bf4c8eb4dab25b3c8880a5d051e9335044f3eb08ba30aeb39b82e01b6f591064&', description: 'Un nuevo fondo de pantalla.' }]
-            },
-            {
-                user: 'Vicente Rocha',
-                profilePic: 'https://cdn.discordapp.com/avatars/997254864801378461/02291b2d74f14df7121a9a7cfbfbfa88.webp?size=80',
-                media: [{ type: 'video', url: 'https://cdn.discordapp.com/attachments/1350274206138499075/1428198119572508784/Video-2.mp4?ex=68f1a0a6&is=68f04f26&hm=cb854207095c4204b01d6f8ddea35e9b8f41d884d75a027c0ba7f26711955889&', description: 'Día de playa 🏄‍♂️ (Video de reemplazo para link de Instagram)' }]
-            },
-            {
-                user: 'NathDann',
-                profilePic: 'https://cdn.discordapp.com/avatars/1325700534895640636/4f63a30a26623d7d94ebe4ba6228a7a4.webp?size=80',
-                media: [
-                    { type: 'image', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1426048106662723634/FB_IMG_1760066746374.jpg?ex=68f10e8b&is=68efbd0b&hm=efb4d228c70551e0ed781c8fae5bdd88022bc4f9833150c640c78a64dda2a411&', description: 'Recuerdos.' },
-                    { type: 'image', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1428110574322974720/Screenshot_20251015_140059_Facebook.jpg?ex=68f14f1d&is=68effd9d&hm=94c21f825eb5d269bb16060259b87a60c3522258da052e3d47f101856007dd73&', description: 'Facebook memories.' }
-                ]
-            },
-            {
-                user: 's3b4vivo',
-                profilePic: 'https://cdn.discordapp.com/avatars/484119016328134671/41014baa15fa9c772fad3ab4d5620466.webp?size=80',
-                media: [
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427344489386606763/MR._WORLDWIDE_gemes.mp4?ex=68f128a5&is=68efd725&hm=5eb535e36f203319109c9928f4971144a7e0799189c1ea045f15531a054724a9&', description: 'Mr. Worldwide!' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427344490556952776/Gemes_Cholas.mp4?ex=68f128a5&is=68efd725&hm=3d62f554900d72a6f8495a872d28cddbe6fc531c3aeb5beaa9f189c97512c44f&', description: 'Gemes Cholas' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427344492075155558/teffy_KO.mp4?ex=68f128a5&is=68efd725&hm=8a140a678fa082f074a130f2577f6aaf0e94fbcf78a6aa0dbe28b4fd6bc84ad6&', description: 'Teffy KO' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427344493954465842/Cuphead_gemes.mp4?ex=68f128a6&is=68efd726&hm=7057bfb1e93b5e3ddeac435d4f9f62f199ac533a3cdbdc2e858e07e1cda31cc0&', description: 'Cuphead!' }
-                ]
-            },
-            {
-                user: 'Theporkman',
-                profilePic: 'https://cdn.discordapp.com/avatars/1274982530201686049/9a669551ed53c92119725cf4b11e1ac0.webp?size=80',
-                media: [
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431562198253608/InShot_20251012_105420186.mp4?ex=68f0d0fc&is=68ef7f7c&hm=38031bcc37b673b3bfb74c6df05cc080bd061c1a21db4af559bfe59c7cfdd992&', description: 'Video 1' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431562990850239/InShot_20251012_105232323.mp4?ex=68f0d0fd&is=68ef7f7d&hm=0eb5886ae83dd645f0c502ed1fae82a62dbf9defa0a5fb5d15f0d4a4f07f1f2e&', description: 'Video 2' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431563582373949/InShot_20251012_103534889.mp4?ex=68f0d0fd&is=68ef7f7d&hm=15903abf649a41544e857018817cf3f77ae38a9f9e89b72c83fe09f9403e93d1&', description: 'Video 3' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431564488216606/InShot_20251012_103114379.mp4?ex=68f0d0fd&is=68ef7f7d&hm=2251a25f1b6d944c59df05e7eb925f8002079f263b9cfdbcd1b2131eaeaa1b33&', description: 'Video 4' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431565058637855/InShot_20251012_102550578.mp4?ex=68f0d0fd&is=68ef7f7d&hm=691f7f699a26d73ef01fe353951eb3292886de4362ea6b1bc23df9a8e4f5730e&', description: 'Video 5' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431565645975592/InShot_20251012_102156589.mp4?ex=68f0d0fd&is=68ef7f7d&hm=4df51e0a5eab1b1594e381f475f663b05cee3418c021cfa95742b204cbe31bbf&', description: 'Video 6' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431566556266667/InShot_20251012_101731647.mp4?ex=68f0d0fd&is=68ef7f7d&hm=d0d12eef4e4bbc3ff5135368b4ed877f411392cad49bde80d52830594f9639bf&', description: 'Video 7' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431567042547732/InShot_20251012_101428086.mp4?ex=68f0d0fd&is=68ef7f7d&hm=e7ff72046803b3fe122e8e1a1548d21b70542bde60a1232fca2a0385b5af6794&', description: 'Video 8' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431567877476362/InShot_20251012_100000345.mp4?ex=68f0d0fe&is=68ef7f7e&hm=6c1915825b5da84bc772ccd685cfef3d5f386d0bde26175d33f5ba222c79545e&', description: 'Video 9' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431568364011581/InShot_20251012_095757795.mp4?ex=68f0d0fe&is=68ef7f7e&hm=2324bfeebd5111dc7eae0cd2b69a13de6fa204b5fbdb5c18f15c25e2eb56ad39&', description: 'Video 10' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431761478156368/InShot_20251012_095530137.mp4?ex=68f0d12c&is=68ef7fac&hm=50f0d8c02ad2b4b6aa2b767370bb88ec508fd11572254a39d973d3589f621a59&', description: 'Video 11' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427432134712234150/AQO4MW5akbzi9C_2wbSCU8lU2uxICH15BC0Oq6N2szxNv9zL5lVq-G5x2f4F4_k5cCywbFB_2FIiggFFJaekWcoUlFRCPpuT-7yXBo0.mp4?ex=68f0d185&is=68ef8005&hm=b4c3988e94ed423d1dda21421b298207165feb8858a37beab754f82c6f75b32f&', description: 'Video 12' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427432312865296455/InShot_20251013_110329095.mp4?ex=68f0d1af&is=68ef802f&hm=7d497d2aa1de7101f52e25705d4a9745b585e9e54ad971aa271f9e7d9bcbdd2e&', description: 'Video 13' }
-                ]
-            },
-            {
-                user: 'Rub0acklt',
-                profilePic: 'https://cdn.discordapp.com/avatars/397944376556519425/220bcd4210045810f42c4edf729e435c.webp?size=80',
-                media: [{ type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427849197251596340/59e19401aae5f89507a70cd8060a09f4.mp4?ex=68f10470&is=68efb2f0&hm=0e41667fc2540d228dcb210c7627d1d44fd8502eac609a71b19c4ff4c975e755&', description: 'Animación' }]
-            },
-            {
-                user: 'LUHPZA',
-                profilePic: 'https://cdn.discordapp.com/avatars/808501736410054677/37c997f890f4b16c8fb2bb7377357191.webp?size=80',
-                media: [
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1428148001947385907/InShot_20251013_170112991.mp4?ex=68f171f9&is=68f02079&hm=392a6512005e3e8e186fbedda93c056993718693cc2cc4ddb48d9d337e3f7f3c&', description: 'Clip de Lujo' },
-                    { type: 'image', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1428148080544579584/GIF-250924_230534_1.gif?ex=68f1720c&is=68f0208c&hm=4da98d2af49375ca200190f5b082619babb24af7f4669fd24113a793cef910c3&', description: 'GIF animado' },
-                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1428148135363870851/InShot_20251012_2245216862.mp4?ex=68f17219&is=68f02099&hm=633d84d1ec5b366603984d9cba5b767b5afec3d7e5ff09da6038330f11a22848&', description: 'Otro video' },
-                    { type: 'image', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1428157011501125734/GIF-251015_200545.gif?ex=68f17a5d&is=68f028dd&hm=41180b02c148593f7ad25614ef7abab9571222ec38a4b7f0a56ee6f16aa0dfa7&', description: 'Segundo GIF' }
-                ]
-            }
-        ];
+  <div id="export-area" class="planner-container">
+    <div id="calendar-wrapper">
+      <div class="page" id="main-page">
+        <div id="background-image-container"></div>
+        <div class="page-content-wrapper">
+          <div id="elements-container"></div>
+          <div class="month-header">
+            <div class="logo-placeholder">
+              <div class="text-logo">
+                <span id="logo-emilie" class="logo-part">Emilie</span>
+                <span id="logo-ampersand" class="logo-part">&</span>
+                <span id="logo-estephany" class="logo-part">Estephany</span>
+              </div>
+            </div>
+            <div class="month-year-container">
+              <div id="month-name" class="month-name" contenteditable="true"></div>
+              <div id="year-display" class="year" contenteditable="true"></div>
+            </div>
+          </div>
+          <table class="calendar">
+            <thead><tr><th>L</th><th>M</th><th>X</th><th>J</th><th>V</th><th>S</th><th>D</th></tr></thead>
+            <tbody id="calendar-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="page" id="next-month-page" style="display: none;"></div>
+    </div>
+    <aside class="sidebar">
+      <h3 class="tasks-header" contenteditable="true">Tareas / Tasks</h3>
+      <ul class="task-list"></ul>
+    </aside>
+  </div>
 
-        const mediaData = usersData.flatMap(user =>
-            user.media.map(item => ({...item, user: user.user, profilePic: user.profilePic }))
-        );
+  <!-- ======= SCRIPT PRINCIPAL DE LA APP ======= -->
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const controls = {
+      month: document.getElementById('month-selector'),
+      year: document.getElementById('year-input'),
+      logoColor1: document.getElementById('logo-color-1'),
+      logoColor2: document.getElementById('logo-color-2'),
+      logoColor3: document.getElementById('logo-color-3'),
+      accentColor1: document.getElementById('accent-color-1'),
+      accentColor2: document.getElementById('accent-color-2'),
+      paperColor: document.getElementById('paper-color'),
+      inkColor: document.getElementById('ink-color'),
+      bgImageUrl: document.getElementById('background-image-url'),
+      itemUrl: document.getElementById('item-url'),
+      bgOpacitySlider: document.getElementById('background-opacity-slider'),
+      bgSizeSlider: document.getElementById('background-size-slider'),
+      bgPosXSlider: document.getElementById('background-pos-x'),
+      bgPosYSlider: document.getElementById('background-pos-y'),
+      addTaskBtn: document.getElementById('addTaskBtn'),
+      downloadBtn: document.getElementById('downloadBtn'),
+      toggleSidebarBtn: document.getElementById('toggleSidebarBtn'),
+      saveJsonBtn: document.getElementById('saveJsonBtn'),
+      loadJsonBtn: document.getElementById('loadJsonBtn'),
+      jsonUpload: document.getElementById('json-upload'),
+      glowToggle: document.getElementById('glow-toggle'),
+      glowIntensitySlider: document.getElementById('glow-intensity-slider'),
+      addArrowBtn: document.getElementById('addArrowBtn'),
+      addItemBtn: document.getElementById('addItemBtn'),
+      individualNoteEditor: document.getElementById('individual-note-editor'),
+      editingDayLabel: document.getElementById('editing-day-label'),
+      fontSizeInput: document.getElementById('individual-font-size-input'),
+      fontSizeDisplay: document.getElementById('individual-font-size-display'),
+      mainPageHeightSlider: document.getElementById('main-page-height-slider'),
+      showNextMonthToggle: document.getElementById('show-next-month-toggle'),
+    };
 
-        const mediaFeed = document.getElementById('media-feed');
-        const unmuteOverlay = document.getElementById('unmute-overlay');
-        let hideUITimer = null;
+    const display = {
+      planner: document.getElementById('export-area'),
+      monthName: document.getElementById('month-name'),
+      year: document.getElementById('year-display'),
+      calendarBody: document.getElementById('calendar-body'),
+      todoList: document.querySelector('.task-list'),
+      bgImageContainer: document.getElementById('background-image-container'),
+      sidebar: document.querySelector('.sidebar'),
+      elementsContainer: document.getElementById('elements-container'),
+      nextMonthPage: document.getElementById('next-month-page'),
+    };
 
-        mediaData.forEach(data => {
-            const mediaItem = document.createElement('div');
-            mediaItem.className = 'media-item';
+    const monthData = { names: ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"] };
+    let taskCounter = 0, confettiInterval = null, activeNoteElement = null, activeDraggableElement = null;
 
-            let mediaElement;
-            if (data.type === 'video') {
-                mediaElement = document.createElement('video');
-                mediaElement.loop = true;
-                mediaElement.muted = true;
-                mediaElement.playsInline = true;
-                mediaElement.addEventListener('click', () => {
-                    if (mediaElement.paused) mediaElement.play();
-                    else mediaElement.pause();
-                });
-            } else {
-                mediaElement = document.createElement('img');
-            }
-            mediaElement.src = data.url;
-
-            const overlay = document.createElement('div');
-            overlay.className = 'absolute bottom-20 left-0 p-4 text-white overlay-content w-full interactive-ui';
-            overlay.innerHTML = `<div class="flex items-center"><div class="w-10 h-10 bg-gray-400 rounded-full mr-3 bg-cover bg-center" style="background-image: url('${data.profilePic}')"></div><div><h3 class="font-bold text-lg">${data.user}</h3></div></div>`;
-
-            const controls = document.createElement('div');
-            controls.className = 'absolute bottom-20 right-0 p-4 flex flex-col items-center space-y-4 text-white overlay-content interactive-ui';
-            
-            mediaItem.appendChild(mediaElement);
-            mediaItem.appendChild(overlay);
-            
-            if (data.type === 'video') {
-                const volumeIconSVG = `<svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4a1 1 0 000 2v4a1 1 0 102 0V6a1 1 0 00-2 0zm4 0a1 1 0 000 2v4a1 1 0 102 0V6a1 1 0 00-2 0zm-2-3a1 1 0 00-1 1v10a1 1 0 102 0V2a1 1 0 00-1-1zM3 5a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1zm13 0a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1z"></path></svg>`;
-                const volumeControlContainer = document.createElement('div');
-                volumeControlContainer.className = 'volume-control-container text-center';
-                volumeControlContainer.innerHTML = `
-                    ${volumeIconSVG}
-                    <div class="volume-slider">
-                        <input type="range" min="0" max="1" step="0.01" value="0.5" class="volume-bar">
-                    </div>
-                `;
-                controls.appendChild(volumeControlContainer);
-                
-                const volumeBar = volumeControlContainer.querySelector('.volume-bar');
-                volumeBar.addEventListener('input', (e) => {
-                    mediaElement.volume = e.target.value;
-                    mediaElement.muted = e.target.value === '0';
-                });
-
-                const progressBarContainer = document.createElement('div');
-                progressBarContainer.className = 'progress-bar-container interactive-ui';
-                const progressBar = document.createElement('input');
-                progressBar.type = 'range';
-                progressBar.className = 'progress-bar';
-                progressBar.value = 0;
-                progressBarContainer.appendChild(progressBar);
-                mediaItem.appendChild(progressBarContainer);
-
-                mediaElement.addEventListener('loadedmetadata', () => progressBar.max = mediaElement.duration);
-                mediaElement.addEventListener('timeupdate', () => progressBar.value = mediaElement.currentTime);
-                progressBar.addEventListener('input', () => mediaElement.currentTime = progressBar.value);
-            }
-
-            mediaItem.appendChild(controls);
-            
-            const resetUITimer = () => {
-                clearTimeout(hideUITimer);
-                mediaItem.querySelectorAll('.interactive-ui').forEach(el => el.classList.remove('fade-out'));
-                hideUITimer = setTimeout(() => {
-                    mediaItem.querySelectorAll('.interactive-ui').forEach(el => el.classList.add('fade-out'));
-                }, 2000);
-            };
-            mediaItem.addEventListener('pointermove', resetUITimer);
-            mediaItem.addEventListener('pointerdown', resetUITimer);
-            
-            mediaFeed.appendChild(mediaItem);
+    function buildConfigObject() {
+      const notes = {};
+      document.querySelectorAll('#main-page .calendar td:not(.empty-day)').forEach(cell => {
+        const day = cell.querySelector('.day-number').textContent;
+        const noteEl = cell.querySelector('.note');
+        const noteHTML = noteEl.innerHTML;
+        const noteFontSize = noteEl.style.fontSize; 
+        if ((noteHTML && noteHTML.trim() !== '') || noteFontSize) {
+          notes[day] = { html: noteHTML, fontSize: noteFontSize || '' };
+        }
+      });
+      const tasks = [];
+      document.querySelectorAll('.task-item').forEach(item => {
+        tasks.push({
+          text: item.querySelector('span').innerHTML,
+          checked: item.querySelector('input[type="checkbox"]').checked
         });
+      });
+      const elements = [];
+      document.querySelectorAll('.draggable-arrow, .draggable-item').forEach(el => {
+        const isArrow = el.classList.contains('draggable-arrow');
+        const elementData = {
+          type: isArrow ? 'arrow' : 'item',
+          left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height,
+          rotation: el.dataset.rotation, scaleX: el.dataset.scaleX, scaleY: el.dataset.scaleY,
+        };
+        if (!isArrow) { elementData.url = el.dataset.url; elementData.color = el.style.color || ''; }
+        elements.push(elementData);
+      });
+      return {
+        version: 5,
+        month: controls.month.value,
+        year: controls.year.value,
+        monthName: display.monthName.textContent,
+        yearDisplay: display.year.textContent,
+        tasksHeader: document.querySelector('.tasks-header').textContent,
+        glowMode: controls.glowToggle.checked,
+        glowIntensity: controls.glowIntensitySlider.value,
+        styles: {
+          logoColor1: controls.logoColor1.value,
+          logoColor2: controls.logoColor2.value,
+          logoColor3: controls.logoColor3.value,
+          accentColor1: controls.accentColor1.value,
+          accentColor2: controls.accentColor2.value,
+          paperColor: controls.paperColor.value,
+          inkColor: controls.inkColor.value,
+        },
+        background: {
+          url: controls.bgImageUrl.value,
+          opacity: controls.bgOpacitySlider.value,
+          size: controls.bgSizeSlider.value,
+          posX: controls.bgPosXSlider.value,
+          posY: controls.bgPosYSlider.value
+        },
+        mainPageHeight: controls.mainPageHeightSlider.value,
+        showNextMonth: controls.showNextMonthToggle.checked,
+        content: { notes, tasks, elements }
+      };
+    }
 
-        unmuteOverlay.addEventListener('click', () => {
-            unmuteOverlay.style.display = 'none';
-            document.querySelectorAll('video').forEach(video => {
-                video.muted = false;
-                const volumeBar = video.closest('.media-item').querySelector('.volume-bar');
-                if(volumeBar) video.volume = volumeBar.value;
-            });
-        }, { once: true });
-        
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const video = entry.target.querySelector('video');
-                if (video) {
-                    if (entry.isIntersecting) {
-                        video.play().catch(e => console.log("Reproducción automática necesita interacción.", e));
-                        entry.target.dispatchEvent(new Event('pointermove')); // Activar UI al scrollear
-                    } else {
-                        video.pause();
-                    }
-                }
-            });
-        }, { threshold: 0.8 });
+    function initialize() {
+      monthData.names.forEach((name, index) => {
+        const option = document.createElement('option'); option.value = index; option.textContent = name; controls.month.appendChild(option);
+      });
 
-        document.querySelectorAll('.media-item').forEach(item => observer.observe(item));
-    </script>
+      controls.downloadBtn.disabled = true;
+      controls.downloadBtn.textContent = "Cargando...";
+
+      document.fonts.ready.then(() => {
+        controls.downloadBtn.disabled = false; controls.downloadBtn.textContent = "Descargar PNG";
+        const today = new Date();
+        controls.month.value = today.getMonth(); controls.year.value = today.getFullYear();
+
+        const rootStyle = getComputedStyle(document.documentElement);
+        controls.logoColor1.value = rootStyle.getPropertyValue('--logo-color-1').trim();
+        controls.logoColor2.value = rootStyle.getPropertyValue('--logo-color-2').trim();
+        controls.logoColor3.value = rootStyle.getPropertyValue('--logo-color-3').trim();
+        controls.accentColor1.value = rootStyle.getPropertyValue('--accent-1').trim();
+        controls.accentColor2.value = rootStyle.getPropertyValue('--accent-2').trim();
+        controls.paperColor.value = rootStyle.getPropertyValue('--paper').trim();
+        controls.inkColor.value = rootStyle.getPropertyValue('--ink-editable').trim();
+        controls.bgOpacitySlider.value = rootStyle.getPropertyValue('--bg-opacity').trim();
+        controls.bgSizeSlider.value = 100; controls.bgPosXSlider.value = 50; controls.bgPosYSlider.value = 50;
+        controls.mainPageHeightSlider.value = parseInt(rootStyle.getPropertyValue('--main-page-height'));
+        updateFullDisplay();
+
+        for(let i=0;i<5;i++) addTask(i===0?"¡Planificar el mes!":"...");
+      });
+
+      /* Listeners */
+      controls.month.addEventListener('change', updateFullDisplay);
+      controls.year.addEventListener('input', updateFullDisplay);
+
+      controls.logoColor1.addEventListener('input', () => updateCssVariable('--logo-color-1', controls.logoColor1.value));
+      controls.logoColor2.addEventListener('input', () => updateCssVariable('--logo-color-2', controls.logoColor2.value));
+      controls.logoColor3.addEventListener('input', () => updateCssVariable('--logo-color-3', controls.logoColor3.value));
+      controls.accentColor1.addEventListener('input', () => updateCssVariable('--accent-1', controls.accentColor1.value));
+
+      controls.accentColor2.addEventListener('input', () => {
+        const colorValue = controls.accentColor2.value; updateCssVariable('--accent-2', colorValue);
+        const rgb = hexToRgb(colorValue); if (rgb) updateCssVariable('--grid-line', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`);
+      });
+
+      controls.paperColor.addEventListener('input', () => updateCssVariable('--paper', controls.paperColor.value));
+      controls.inkColor.addEventListener('input', () => updateCssVariable('--ink-editable', controls.inkColor.value));
+      
+      controls.bgImageUrl.addEventListener('input', (e) => {
+        let url = e.target.value.trim();
+        const transformedUrl = transformGithubUrl(url);
+        if (transformedUrl !== url) {
+          url = transformedUrl;
+          e.target.value = url;
+        }
+        if (url) {
+          const img = new Image();
+          img.onload = () => { display.bgImageContainer.style.backgroundImage = `url(${url})`; };
+          img.onerror = () => { console.error('Error loading background image:', url); window.showNotification?.('No se pudo cargar la imagen de fondo.', 'error'); display.bgImageContainer.style.backgroundImage = 'none'; };
+          img.crossOrigin = "anonymous";
+          img.src = url;
+        } else {
+          display.bgImageContainer.style.backgroundImage = 'none';
+        }
+      });
+
+      controls.bgOpacitySlider.addEventListener('input', (e) => updateCssVariable('--bg-opacity', e.target.value));
+      controls.bgSizeSlider.addEventListener('input', (e) => updateCssVariable('--bg-size', `${e.target.value}%`));
+      controls.bgPosXSlider.addEventListener('input', (e) => updateCssVariable('--bg-pos-x', `${e.target.value}%`));
+      controls.bgPosYSlider.addEventListener('input', (e) => updateCssVariable('--bg-pos-y', `${e.target.value}%`));
+      controls.mainPageHeightSlider.addEventListener('input', (e) => updateCssVariable('--main-page-height', `${e.target.value}vh`));
+      controls.showNextMonthToggle.addEventListener('change', updateFullDisplay);
+
+      controls.addTaskBtn.addEventListener('click', () => addTask('Nueva tarea'));
+      controls.downloadBtn.addEventListener('click', handleDownload);
+      controls.toggleSidebarBtn.addEventListener('click', toggleSidebar);
+      controls.saveJsonBtn.addEventListener('click', saveConfiguration);
+      controls.loadJsonBtn.addEventListener('click', () => controls.jsonUpload.click());
+      controls.jsonUpload.addEventListener('change', loadConfiguration);
+      controls.addArrowBtn.addEventListener('click', () => createArrow());
+      controls.addItemBtn.addEventListener('click', () => {
+        const url = controls.itemUrl.value; if (url) { createItem({ url }); controls.itemUrl.value = ''; }
+      });
+
+      controls.glowToggle.addEventListener('change', (e) => { document.body.classList.toggle('glow-mode', e.target.checked); });
+      controls.glowIntensitySlider.addEventListener('input', (e) => { updateCssVariable('--glow-intensity', e.target.value); });
+
+      display.todoList.addEventListener('click', function(e) { if (e.target.matches('.remove-task-btn')) e.target.closest('.task-item')?.remove(); });
+
+      document.getElementById('calendar-wrapper').addEventListener('focusin', (e) => { if (e.target.classList.contains('note')) handleNoteFocus(e.target); });
+
+      controls.fontSizeInput.addEventListener('input', (e) => {
+        if (activeNoteElement) { const newSize = e.target.value; activeNoteElement.style.fontSize = `${newSize}px`; controls.fontSizeDisplay.textContent = `${newSize}px`; }
+      });
+
+      document.addEventListener('click', (e) => { if (!e.target.closest('.draggable-arrow, .draggable-item')) deselectAllElements(); });
+    }
+
+    function handleNoteFocus(noteElement) {
+      activeNoteElement = noteElement;
+      const dayNumber = activeNoteElement.closest('td').querySelector('.day-number').textContent;
+      const currentSize = parseInt(window.getComputedStyle(noteElement).fontSize) || 14;
+      controls.editingDayLabel.textContent = `Fuente (Día ${dayNumber}):`;
+      controls.fontSizeInput.value = currentSize; controls.fontSizeDisplay.textContent = `${currentSize}px`;
+      controls.individualNoteEditor.style.display = 'flex';
+    }
+
+    function updateFullDisplay() {
+      if (confettiInterval) { clearInterval(confettiInterval); confettiInterval = null; }
+      const year = parseInt(controls.year.value); const month = parseInt(controls.month.value);
+      if (isNaN(year) || isNaN(month)) return;
+
+      display.monthName.textContent = monthData.names[month].toUpperCase();
+      display.year.textContent = year;
+      generateCalendar(year, month);
+
+      const mainPage = document.getElementById('main-page');
+      if (controls.showNextMonthToggle.checked) {
+        mainPage.classList.add('with-next-month'); display.nextMonthPage.style.display = 'block';
+        const nextMonthDate = new Date(year, month + 1, 1);
+        renderNextMonth(nextMonthDate.getFullYear(), nextMonthDate.getMonth());
+      } else {
+        mainPage.classList.remove('with-next-month');
+        display.nextMonthPage.style.display = 'none'; display.nextMonthPage.innerHTML = '';
+      }
+    }
+
+    function generateCalendar(year, month) {
+      display.calendarBody.innerHTML = '';
+      const firstDay = new Date(year, month, 1);
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      let startingDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; 
+      let date = 1; let row = document.createElement('tr'); display.calendarBody.appendChild(row);
+
+      for (let i = 0; i < startingDay; i++) { const cell = document.createElement('td'); cell.classList.add('empty-day'); row.appendChild(cell); }
+
+      while (date <= daysInMonth) {
+        if (row.children.length === 7) { row = document.createElement('tr'); display.calendarBody.appendChild(row); }
+        const cell = document.createElement('td');
+        let cellHTML = `<div class="day-number">${date}</div>`;
+        const currentDayOfWeek = new Date(year, month, date).getDay();
+        if ([1,3,5,6].includes(currentDayOfWeek)) cellHTML += `<div class="stream-time">Stream 5:30pm MX</div>`;
+        if (month === 9 && date === 25) { cell.classList.add('epic-frame'); cellHTML += '<canvas class="confetti-canvas"></canvas>'; }
+        cellHTML += `<div class="note" contenteditable="true"></div>`;
+        cell.innerHTML = cellHTML; row.appendChild(cell); date++;
+      }
+      while (row.children.length > 0 && row.children.length < 7) { const cell = document.createElement('td'); cell.classList.add('empty-day'); row.appendChild(cell); }
+
+      if (month === 9) { const birthdayCell = display.calendarBody.querySelector('.epic-frame'); if (birthdayCell) startBirthdayConfetti(birthdayCell); }
+    }
+
+    function renderNextMonth(year, month) {
+      display.nextMonthPage.innerHTML = `
+        <div class="page-content-wrapper">
+          <div class="month-header">
+            <div class="month-year-container" style="width:100%; text-align:right;">
+              <div class="month-name">${["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][month].toUpperCase()}</div>
+              <div class="year">${year}</div>
+            </div>
+          </div>
+          <table class="calendar">
+            <thead><tr><th>L</th><th>M</th><th>X</th><th>J</th><th>V</th><th>S</th><th>D</th></tr></thead>
+            <tbody id="calendar-body-next"></tbody>
+          </table>
+        </div>`;
+      const calendarBodyNext = display.nextMonthPage.querySelector('#calendar-body-next');
+      const firstDay = new Date(year, month, 1);
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      let startingDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+      let date = 1; let row = document.createElement('tr'); calendarBodyNext.appendChild(row);
+
+      for (let i = 0; i < startingDay; i++) { const cell = document.createElement('td'); cell.classList.add('empty-day'); row.appendChild(cell); }
+      while (date <= daysInMonth) {
+        if (row.children.length === 7) { row = document.createElement('tr'); calendarBodyNext.appendChild(row); }
+        const cell = document.createElement('td');
+        let cellHTML = `<div class="day-number">${date}</div>`;
+        const currentDayOfWeek = new Date(year, month, date).getDay();
+        if ([1,3,5,6].includes(currentDayOfWeek)) cellHTML += `<div class="stream-time">Stream 5:30pm MX</div>`;
+        cellHTML += '<div class="note" contenteditable="true"></div>';
+        cell.innerHTML = cellHTML; row.appendChild(cell); date++;
+      }
+      while (row.children.length > 0 && row.children.length < 7) { const cell = document.createElement('td'); cell.classList.add('empty-day'); row.appendChild(cell); }
+    }
+
+    function startBirthdayConfetti(targetCell) {
+      if (confettiInterval || !targetCell) return;
+      const canvas = targetCell.querySelector('.confetti-canvas'); if (!canvas) return;
+      const myConfetti = confetti.create(canvas, { resize:true, useWorker:false });
+      const defaults = { spread:360, ticks:100, gravity:0.1, decay:0.98, startVelocity:10, zIndex:10 };
+      function randomInRange(min,max){ return Math.random()*(max-min)+min; }
+      confettiInterval = setInterval(function() {
+        const particleCount = 10;
+        const colors = [controls.logoColor1.value, controls.logoColor2.value, controls.logoColor3.value, '#ffd700'];
+        myConfetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.9), y: Math.random() - 0.2 }, colors }));
+      }, 800);
+    }
+
+    function updateCssVariable(variable, value){ document.documentElement.style.setProperty(variable, value); }
+    function hexToRgb(hex){ let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex); return result ? { r: parseInt(result[1],16), g: parseInt(result[2],16), b: parseInt(result[3],16) } : null; }
+    
+    function transformGithubUrl(url) {
+      const githubBlobRegex = /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+?)(\?raw=true)?$/;
+      const match = url.match(githubBlobRegex);
+      if (match) {
+        const [, user, repo, branch, path] = match;
+        return `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${path}`;
+      }
+      return url;
+    }
+
+    function addTask(text, isChecked=false){
+      taskCounter++; const newLi = document.createElement('li'); newLi.classList.add('task-item');
+      newLi.innerHTML = `<input type="checkbox" id="task${taskCounter}"> <span contenteditable="true">${text}</span><button class="remove-task-btn" title="Quitar tarea">×</button>`;
+      newLi.querySelector('input[type="checkbox"]').checked = isChecked; display.todoList.appendChild(newLi);
+    }
+
+    function handleDownload() {
+      deselectAllElements();
+      const downloadButton = controls.downloadBtn;
+      downloadButton.textContent = "Generando..."; downloadButton.disabled = true;
+      setTimeout(() => {
+        if (confettiInterval) clearInterval(confettiInterval);
+        html2canvas(document.getElementById('export-area'), {
+          scale:2, useCORS:true, backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--paper').trim(),
+          onclone: (clonedDoc) => { const activeElement = clonedDoc.activeElement; if(activeElement && activeElement.blur) activeElement.blur(); }
+        }).then(canvas => {
+          const link = document.createElement('a');
+          link.download = `planificador-${controls.year.value}-${["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][controls.month.value]}.png`;
+          link.href = canvas.toDataURL('image/png'); link.click();
+          downloadButton.textContent = "Descargar PNG"; downloadButton.disabled = false; updateFullDisplay();
+        }).catch(err => {
+          console.error("Error al generar el canvas: ", err);
+          downloadButton.textContent = "Error";
+          setTimeout(() => { downloadButton.textContent = "Descargar PNG"; downloadButton.disabled = false; }, 2000);
+          updateFullDisplay();
+        });
+      }, 500);
+    }
+
+    function toggleSidebar(){ const isHidden = display.sidebar.style.display === 'none'; display.sidebar.style.display = isHidden ? '' : 'none'; controls.toggleSidebarBtn.textContent = isHidden ? 'Ocultar Panel' : 'Mostrar Panel'; }
+    function updateElementTransform(el){ const rot = el.dataset.rotation || '0', sx = el.dataset.scaleX || '1', sy = el.dataset.scaleY || '1'; el.style.transform = `rotate(${rot}deg) scale(${sx}, ${sy})`; }
+
+    async function injectExternalSVG(destSvg, url, forceColor) {
+      try {
+        const res = await fetch(url, { mode: "cors" }); 
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const text = await res.text();
+        const parser = new DOMParser(); const doc = parser.parseFromString(text, "image/svg+xml"); const extSvg = doc.documentElement;
+        if(extSvg.querySelector('parsererror')) throw new Error('Failed to parse SVG');
+        const vb = extSvg.getAttribute("viewBox"); destSvg.setAttribute("viewBox", vb || destSvg.getAttribute("viewBox") || "0 0 1024 1024");
+        while (destSvg.firstChild) destSvg.removeChild(destSvg.firstChild);
+        const nodesToCopy = [...extSvg.childNodes].filter(n => n.nodeType === 1); nodesToCopy.forEach(n => destSvg.appendChild(destSvg.ownerDocument.importNode(n, true)));
+        if (forceColor) destSvg.querySelectorAll('path').forEach(p => p.classList.add('arrow-path'));
+        if (!destSvg.hasAttribute('preserveAspectRatio')) destSvg.setAttribute('preserveAspectRatio','none');
+      } catch(e) {
+        console.error("Error injecting SVG:", e);
+        throw e;
+      }
+    }
+
+    async function createArrow(config = {}) {
+      const arrowWrapper = document.createElement('div'); arrowWrapper.className = 'draggable-arrow';
+      arrowWrapper.style.left = config.left || '50px'; arrowWrapper.style.top = config.top || '50px';
+      arrowWrapper.style.width = config.width || '150px'; arrowWrapper.style.height = config.height || '150px';
+      arrowWrapper.dataset.rotation = config.rotation || '0'; arrowWrapper.dataset.scaleX = config.scaleX || '1'; arrowWrapper.dataset.scaleY = config.scaleY || '1';
+      updateElementTransform(arrowWrapper);
+      const svgNS = "http://www.w3.org/2000/svg"; const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('viewBox','0 0 1024 1024'); svg.setAttribute('preserveAspectRatio','none'); arrowWrapper.appendChild(svg);
+      const ARROW_URL = 'https://raw.githubusercontent.com/JoarviKirby/kjh87sdfg-assets/refs/heads/main/Arrow.svg';
+      try{ await injectExternalSVG(svg, ARROW_URL, true); }catch(e){ const path=document.createElementNS(svgNS,'path'); path.setAttribute('d','M100 900 L900 512 L100 124 Z'); path.classList.add('arrow-path'); svg.appendChild(path); }
+      const resizer = document.createElement('div'); resizer.className='resizer bottom-right';
+      const controlsDiv = document.createElement('div'); controlsDiv.className='arrow-controls';
+      controlsDiv.innerHTML = `<button title="Girar Izquierda">↺</button><button title="Girar Derecha">↻</button><button title="Flip Horizontal">↔</button><button title="Flip Vertical">↕</button><input type="color" class="color-picker" title="Cambiar Color" style="display:none;"><button title="Eliminar" class="delete-arrow-btn">×</button>`;
+      arrowWrapper.appendChild(resizer); arrowWrapper.appendChild(controlsDiv);
+      makeDraggable(arrowWrapper); makeResizable(arrowWrapper,resizer); setupElementControls(arrowWrapper,controlsDiv);
+      display.elementsContainer.appendChild(arrowWrapper); selectElement(arrowWrapper); window.__saveCloud?.();
+    }
+
+    async function createItem(config = {}) {
+      if (!config.url) return;
+      const itemWrapper = document.createElement('div'); itemWrapper.className='draggable-item'; itemWrapper.dataset.url = config.url;
+      itemWrapper.style.left = config.left || '75px'; itemWrapper.style.top = config.top || '75px';
+      itemWrapper.style.width = config.width || '100px'; itemWrapper.style.height = config.height || '100px';
+      itemWrapper.dataset.rotation = config.rotation || '0'; itemWrapper.dataset.scaleX = config.scaleX || '1'; itemWrapper.dataset.scaleY = config.scaleY || '1';
+      if (config.color) { itemWrapper.style.color = config.color; itemWrapper.classList.add('color-override'); }
+      updateElementTransform(itemWrapper);
+      if (config.url.toLowerCase().endsWith('.svg')) {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg",'svg'); itemWrapper.appendChild(svg);
+        try{ await injectExternalSVG(svg, config.url, false); }catch(e){ itemWrapper.remove(); return; }
+      } else { const img = document.createElement('img'); img.src=config.url; img.onerror = ()=> itemWrapper.remove(); itemWrapper.appendChild(img); }
+      const resizer = document.createElement('div'); resizer.className='resizer bottom-right';
+      const controlsDiv = document.createElement('div'); controlsDiv.className='arrow-controls';
+      controlsDiv.innerHTML = `<button title="Girar Izquierda">↺</button><button title="Girar Derecha">↻</button><button title="Flip Horizontal">↔</button><button title="Flip Vertical">↕</button><input type="color" class="color-picker" title="Cambiar Color"><button title="Eliminar" class="delete-arrow-btn">×</button>`;
+      itemWrapper.appendChild(resizer); itemWrapper.appendChild(controlsDiv);
+      makeDraggable(itemWrapper); makeResizable(itemWrapper,resizer); setupElementControls(itemWrapper,controlsDiv);
+      display.elementsContainer.appendChild(itemWrapper); selectElement(itemWrapper); window.__saveCloud?.();
+    }
+
+    function makeDraggable(element) {
+      let pos1=0,pos2=0,pos3=0,pos4=0;
+      element.onmousedown = dragMouseDown;
+      function dragMouseDown(e) {
+        if (e.target.classList.contains('resizer') || e.target.closest('.arrow-controls')) return;
+        e.preventDefault(); selectElement(element); pos3 = e.clientX; pos4 = e.clientY;
+        document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
+      }
+      function elementDrag(e){ e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; element.style.top = (element.offsetTop - pos2) + "px"; element.style.left = (element.offsetLeft - pos1) + "px"; }
+      function closeDragElement(){ document.onmouseup = null; document.onmousemove = null; window.__saveCloud?.(); }
+    }
+
+    function makeResizable(element, resizer) {
+      let original_width=0, original_height=0, original_x=0, original_y=0;
+      resizer.onmousedown = function(e) {
+        e.preventDefault(); e.stopPropagation();
+        original_width = parseFloat(getComputedStyle(element,null).getPropertyValue('width').replace('px',''));
+        original_height= parseFloat(getComputedStyle(element,null).getPropertyValue('height').replace('px',''));
+        original_x = e.clientX; original_y = e.clientY; window.onmousemove = resize; window.onmouseup = stopResize;
+      }
+      function resize(e){ const w = original_width + (e.clientX - original_x); const h = original_height + (e.clientY - original_y); if (w>30) element.style.width=w+'px'; if(h>30) element.style.height=h+'px'; }
+      function stopResize(){ window.onmousemove=null; window.onmouseup=null; window.__saveCloud?.(); }
+    }
+
+    function setupElementControls(element, controlsDiv) {
+      const rotateLeftBtn = controlsDiv.children[0], rotateRightBtn = controlsDiv.children[1], flipHBtn = controlsDiv.children[2], flipVBtn = controlsDiv.children[3], colorPicker = controlsDiv.children[4], deleteBtn = controlsDiv.children[5];
+      rotateLeftBtn.onclick = (e)=>{ e.stopPropagation(); let rot=parseFloat(element.dataset.rotation)||0; element.dataset.rotation = rot - 15; updateElementTransform(element); window.__saveCloud?.(); };
+      rotateRightBtn.onclick= (e)=>{ e.stopPropagation(); let rot=parseFloat(element.dataset.rotation)||0; element.dataset.rotation = rot + 15; updateElementTransform(element); window.__saveCloud?.(); };
+      flipHBtn.onclick       = (e)=>{ e.stopPropagation(); let sx=parseFloat(element.dataset.scaleX)||1; element.dataset.scaleX = sx * -1; updateElementTransform(element); window.__saveCloud?.(); };
+      flipVBtn.onclick       = (e)=>{ e.stopPropagation(); let sy=parseFloat(element.dataset.scaleY)||1; element.dataset.scaleY = sy * -1; updateElementTransform(element); window.__saveCloud?.(); };
+      colorPicker.oninput    = (e)=>{ e.stopPropagation(); if (element.classList.contains('draggable-item')) { element.classList.add('color-override'); element.style.color = e.target.value; } window.__saveCloud?.(); };
+      colorPicker.onclick    = (e)=> e.stopPropagation();
+      deleteBtn.onclick      = (e)=>{ e.stopPropagation(); element.remove(); window.__saveCloud?.(); };
+    }
+
+    function selectElement(element){ deselectAllElements(); activeDraggableElement = element; element.classList.add('selected'); }
+    function deselectAllElements(){ document.querySelectorAll('.draggable-arrow.selected, .draggable-item.selected').forEach(el => el.classList.remove('selected')); activeDraggableElement = null; }
+
+    function saveConfiguration() {
+      const config = buildConfigObject();
+      const jsonString = JSON.stringify(config, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `planner-config-${config.year}-${["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][config.month]}.json`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
+    function loadConfiguration(event) {
+      const file = event.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try{ 
+          const config = JSON.parse(e.target.result); 
+          applyConfiguration(config); 
+        }
+        catch (error){ 
+          console.error("Error al cargar/parsing config:", error); 
+          window.showNotification?.("El archivo de configuración no es válido.", 'error');
+        }
+      };
+      reader.readAsText(file); event.target.value='';
+    }
+
+    function applyConfiguration(config) {
+      controls.month.value = config.month; controls.year.value = config.year;
+      controls.logoColor1.value = config.styles.logoColor1; controls.logoColor2.value = config.styles.logoColor2; controls.logoColor3.value = config.styles.logoColor3;
+      controls.accentColor1.value = config.styles.accentColor1; controls.accentColor2.value = config.styles.accentColor2;
+      controls.paperColor.value = config.styles.paperColor; controls.inkColor.value = config.styles.inkColor;
+      controls.bgImageUrl.value = config.background.url; controls.bgOpacitySlider.value = config.background.opacity; controls.bgSizeSlider.value = config.background.size;
+      controls.bgPosXSlider.value = config.background.posX; controls.bgPosYSlider.value = config.background.posY;
+      controls.glowToggle.checked = config.glowMode || false; document.body.classList.toggle('glow-mode', controls.glowToggle.checked);
+      controls.glowIntensitySlider.value = config.glowIntensity || 1; updateCssVariable('--glow-intensity', controls.glowIntensitySlider.value);
+      controls.mainPageHeightSlider.value = config.mainPageHeight || 85; updateCssVariable('--main-page-height', `${controls.mainPageHeightSlider.value}vh`);
+      controls.showNextMonthToggle.checked = config.showNextMonth || false;
+
+      updateCssVariable('--logo-color-1', config.styles.logoColor1);
+      updateCssVariable('--logo-color-2', config.styles.logoColor2);
+      updateCssVariable('--logo-color-3', config.styles.logoColor3);
+      updateCssVariable('--accent-1', config.styles.accentColor1);
+      updateCssVariable('--accent-2', config.styles.accentColor2);
+      updateCssVariable('--paper', config.styles.paperColor);
+      updateCssVariable('--ink-editable', config.styles.inkColor);
+      const rgb = hexToRgb(config.styles.accentColor2); if (rgb) updateCssVariable('--grid-line', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`);
+
+      let bgUrl = config.background.url || '';
+      const transformedUrl = transformGithubUrl(bgUrl);
+      if (transformedUrl !== bgUrl) {
+        bgUrl = transformedUrl;
+        controls.bgImageUrl.value = bgUrl;
+      }
+
+      if (bgUrl && !bgUrl.startsWith('blob:')) {
+        const img = new Image();
+        img.onload = () => { display.bgImageContainer.style.backgroundImage = `url(${bgUrl})`; };
+        img.onerror = () => { console.error('Error loading background image from config:', bgUrl); display.bgImageContainer.style.backgroundImage = 'none'; window.showNotification?.('No se pudo cargar la imagen de fondo desde la URL.', 'error'); };
+        img.crossOrigin = "anonymous";
+        img.src = bgUrl;
+      } else {
+        if (bgUrl.startsWith('blob:')) { window.showNotification?.('Las imágenes locales deben ser re-seleccionadas al cargar.', 'info'); controls.bgImageUrl.value = ''; }
+        display.bgImageContainer.style.backgroundImage = 'none';
+      }
+
+      updateCssVariable('--bg-opacity', config.background.opacity);
+      updateCssVariable('--bg-size', `${config.background.size}%`);
+      updateCssVariable('--bg-pos-x', `${config.background.posX}%`); updateCssVariable('--bg-pos-y', `${config.background.posY}%`);
+
+      updateFullDisplay();
+
+      setTimeout(() => {
+        display.todoList.innerHTML = ''; taskCounter = 0; display.elementsContainer.innerHTML = '';
+        if (config.content && config.content.notes) {
+          Object.keys(config.content.notes).forEach(day => {
+            const cell = Array.from(document.querySelectorAll('#main-page .calendar td .day-number')).find(el => el.textContent === day)?.closest('td');
+            if (cell) {
+              const noteEl = cell.querySelector('.note'); if (noteEl) {
+                const noteData = config.content.notes[day];
+                if (typeof noteData === 'object' && noteData !== null) { noteEl.innerHTML = noteData.html || ''; if (noteData.fontSize) noteEl.style.fontSize = noteData.fontSize; }
+                else { noteEl.innerHTML = noteData; }
+              }
+            }
+          });
+        }
+        if (config.content && config.content.tasks) config.content.tasks.forEach(task => addTask(task.text, task.checked));
+        if (config.content && config.content.elements) {
+          config.content.elements.forEach(elementConfig => { if (elementConfig.type === 'arrow') createArrow(elementConfig); else if (elementConfig.type === 'item') createItem(elementConfig); });
+        } else if (config.content && config.content.arrows) config.content.arrows.forEach(arrowConfig => createArrow(arrowConfig));
+
+        if (config.monthName) display.monthName.textContent = config.monthName;
+        if (config.yearDisplay) display.year.textContent = config.yearDisplay;
+        if (config.tasksHeader) document.querySelector('.tasks-header').textContent = config.tasksHeader;
+        deselectAllElements();
+      }, 100);
+    }
+
+    // Exponer a otros scripts (Supabase)
+    window.buildConfigObject = buildConfigObject;
+    window.applyConfiguration = applyConfiguration;
+    initialize();
+  });
+  </script>
+
+  <!-- ======= SCRIPT SUPABASE (Auth + CRUD) ======= -->
+  <script>
+    // Pega tus claves aquí:
+    const SUPABASE_URL  = "https://bfqgibvgeklyqgcnwbsj.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmcWdpYnZnZWtseXFnY253YnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3OTI4NjEsImV4cCI6MjA3NjM2ODg2MX0.FaIUBq5x4VwIGiGS52GVlrHI47f8Rtudx6hAd-WeCME";
+
+    // Cliente
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    const $saveStatus = document.getElementById('save-status');
+    let notificationTimeout;
+    function showNotification(message, type = 'info') {
+      const bar = document.getElementById('notification-bar');
+      if (!bar) return;
+      bar.textContent = message;
+      bar.style.color = 'white';
+      bar.style.backgroundColor = (type === 'error') ? '#ef9389' : (type === 'success') ? '#89ef9a' : '#7bc5f9';
+      if (type === 'success') bar.style.color = '#111';
+      bar.style.top = '20px';
+      clearTimeout(notificationTimeout);
+      notificationTimeout = setTimeout(() => { bar.style.top = '-100px'; }, 4000);
+    }
+    window.showNotification = showNotification;
+
+    // UI auth
+    const $backdrop   = document.getElementById('auth-modal-backdrop');
+    const $open       = document.getElementById('auth-open');
+    const $close      = document.getElementById('auth-close');
+    const $logout     = document.getElementById('auth-logout');
+    const $status     = document.getElementById('auth-status');
+    const $form       = document.getElementById('auth-form');
+    const $email      = document.getElementById('auth-email');
+    const $password   = document.getElementById('auth-password');
+    const $cloudLoad  = document.getElementById('cloud-load');
+    const $cloudSave  = document.getElementById('cloud-save');
+
+    function openModal(){ $backdrop.style.display='flex'; setTimeout(()=>{ $email.focus(); }, 50); }
+    function closeModal(){ $backdrop.style.display='none'; $form.reset(); }
+    $open.addEventListener('click', openModal);
+    $close.addEventListener('click', closeModal);
+    $backdrop.addEventListener('click', (e)=>{ if(e.target===$backdrop) closeModal(); });
+
+    async function signIn(email, password){
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      return data.user;
+    }
+    async function signUp(email, password){
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      return data.user;
+    }
+
+    $form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      try{
+        await signIn($email.value, $password.value);
+        closeModal();
+        showNotification("Sesión iniciada. Cargando tu calendario...");
+      }catch(err){
+        showNotification("No se pudo iniciar: " + err.message, 'error');
+      }
+    });
+
+    document.getElementById('auth-signup').addEventListener('click', async ()=>{
+      try{
+        await signUp($email.value, $password.value);
+        closeModal();
+        showNotification("Cuenta creada. Ya puedes guardar/cargar.", "success");
+      }catch(err){
+        showNotification("No se pudo crear la cuenta: " + err.message, 'error');
+      }
+    });
+
+    $logout.addEventListener('click', async ()=>{ await sb.auth.signOut(); });
+
+    // CRUD helpers
+    async function loadFromCloud(userId){
+      const { data, error } = await sb.from('planner_configs').select('payload').eq('user_id', userId).single();
+      if (error && error.code !== 'PGRST116') throw error; // 116 = no rows
+      return data?.payload || null;
+    }
+    async function saveToCloud(userId, payload){
+      const { error } = await sb.from('planner_configs')
+        .upsert({ user_id: userId, payload, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+      if (error) throw error;
+    }
+
+    // Botones manuales
+    $cloudLoad.addEventListener('click', async ()=>{
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { openModal(); return; }
+      try{
+        const payload = await loadFromCloud(user.id);
+        if (!payload) { showNotification("No hay datos guardados todavía."); return; }
+        window.applyConfiguration(payload);
+        showNotification("Calendario cargado desde la nube.","success");
+      }catch(err){
+        showNotification("Error al cargar: " + err.message, 'error');
+      }
+    });
+
+    $cloudSave.addEventListener('click', async ()=>{
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { openModal(); return; }
+      try{
+        const payload = window.buildConfigObject();
+        await saveToCloud(user.id, payload);
+        showNotification("Guardado manual completo.","success");
+      }catch(err){
+        showNotification("Error al guardar: " + err.message, 'error');
+      }
+    });
+
+    // Autosave
+    let debounceTimer = null;
+    function ensureAutoSave(){
+      const handler = async ()=>{
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) return;
+        if ($saveStatus){ $saveStatus.textContent = "Cambios detectados..."; $saveStatus.style.opacity = '1'; }
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async ()=>{
+          try{
+            const payload = window.buildConfigObject();
+            await saveToCloud(user.id, payload);
+            if ($saveStatus){ $saveStatus.textContent = "Guardado ✓"; setTimeout(()=>{ $saveStatus.style.opacity='0'; }, 1500); }
+          }catch(e){
+            if ($saveStatus){ $saveStatus.textContent = "Error al guardar"; setTimeout(()=>{ $saveStatus.style.opacity='0'; }, 2000); }
+          }
+        }, 1200);
+      };
+      document.addEventListener('input', handler);
+      document.addEventListener('change', handler);
+      window.__saveCloud = handler; // para llamadas desde otros puntos
+    }
+    window.ensureAutoSave = ensureAutoSave;
+
+    // Estado de auth
+    sb.auth.onAuthStateChange(async (_event, session)=>{
+      const user = session?.user || null;
+      if (user){
+        $status.textContent = `Sesión: ${user.email || user.id}`;
+        document.getElementById('auth-open').style.display = 'none';
+        $logout.style.display = 'inline-block';
+        // Cargar si existe
+        try{
+          const payload = await loadFromCloud(user.id);
+          if (payload){ window.applyConfiguration(payload); showNotification("Calendario cargado desde la nube."); }
+          else { showNotification("Bienvenido 👋 Guarda para crear tu primer backup en la nube."); }
+        }catch{}
+        ensureAutoSave();
+      }else{
+        $status.textContent = 'No has iniciado sesión';
+        document.getElementById('auth-open').style.display = 'inline-block';
+        $logout.style.display = 'none';
+      }
+    });
+  </script>
 </body>
 </html>
-
