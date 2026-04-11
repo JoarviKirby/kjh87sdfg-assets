@@ -1,0 +1,29 @@
+<!-- fairy-spark.svg  ≈ 64 × 64 px -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- halo difuso -->
+  <circle cx="32" cy="32" r="28" fill="url(#halo)" filter="url(#blur)"/>
+  <!-- estrella central -->
+  <polygon points="32,8 38,26 56,26 41,37 46,56 32,45 18,56 23,37 8,26 26,26"
+           fill="url(#star)"/>
+  <!-- gradientes y filtro -->
+  <defs>
+    <!-- halo suave rosa-azul -->
+    <radialGradient id="halo">
+      <stop offset="0%"  stop-color="#ffe9ff" stop-opacity="1"/>
+      <stop offset="70%" stop-color="#c9d6ff" stop-opacity=".6"/>
+      <stop offset="100%" stop-color="#c9d6ff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- estrella dorada-rosada -->
+    <linearGradient id="star" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"  stop-color="#fff5c3"/>
+      <stop offset="50%" stop-color="#ffd1f9"/>
+      <stop offset="100%" stop-color="#ffe97d"/>
+    </linearGradient>
+
+    <!-- blur para el halo -->
+    <filter id="blur">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>
+</svg>

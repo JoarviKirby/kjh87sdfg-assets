@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lunes de Memes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+        }
+        .media-container {
+            height: 100vh;
+            width: 100vw;
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            overflow-x: hidden;
+        }
+        .media-item {
+            height: 100vh;
+            width: 100vw;
+            scroll-snap-align: start;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        video, img {
+            max-width: 100vw;
+            max-height: 100vh;
+            width: auto;
+            height: auto;
+        }
+        .media-container::-webkit-scrollbar { display: none; }
+        .media-container { -ms-overflow-style: none; scrollbar-width: none; }
+        .overlay-content { text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+
+        .interactive-ui {
+            transition: opacity 0.4s ease-in-out;
+        }
+        .interactive-ui.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --- Barra de Progreso --- */
+        .progress-bar-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 0 1rem 1rem 1rem;
+            box-sizing: border-box;
+        }
+        input[type="range"].progress-bar {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"].progress-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+        }
+
+        /* --- Control de Volumen --- */
+        .volume-control-container {
+            position: relative;
+        }
+        .volume-slider {
+            display: none;
+            position: absolute;
+            bottom: 45px; /* Encima del icono */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 10px 5px;
+        }
+        .volume-control-container:hover .volume-slider {
+            display: block;
+        }
+        input[type="range"].volume-bar {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100px; /* Ancho del contenedor vertical */
+        }
+        input[type="range"].volume-bar:focus { outline: none; }
+        /* Escritura vertical */
+        input[type="range"].volume-bar {
+            writing-mode: bt-lr; /* IE */
+            -webkit-appearance: slider-vertical; /* WebKit */
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="unmute-overlay" class="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 cursor-pointer">
+        <div class="text-white text-center">
+            <svg class="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+            <p class="mt-4 text-xl font-semibold">Toca para activar el sonido</p>
+        </div>
+    </div>
+
+    <div id="media-feed" class="media-container">
+        <!-- El contenido se insertará aquí -->
+    </div>
+
+    <script>
+        const usersData = [
+             {
+                user: 'Axl240500',
+                profilePic: 'https://cdn.discordapp.com/avatars/1271355578572210307/d6aa48ed152b2ac9670fe8a09abf629e.webp?size=80',
+                media: [{ type: 'image', url: 'https://media.discordapp.net/attachments/960621081436225557/1425178873045188712/Screenshot_2025-10-07-11-50-53-018_com.zhiliaoapp.musically-edit.jpg?ex=68f130c1&is=68efdf41&hm=cca46245817384db729dd82183c4aa1d31626ead7fcd9b3bc7a748e1b96e2ae4&=&format=webp&width=500&height=778', description: 'Viendo un poco...' }]
+            },
+            {
+                user: 'RiveraJonathan949',
+                profilePic: 'https://cdn.discordapp.com/avatars/689665456289742903/7c05174c8b45fecd847d58d5d52d537f.webp?size=80',
+                media: [{ type: 'image', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1425924120327094352/1760030284591.jpg?ex=68f143d2&is=68eff252&hm=bf4c8eb4dab25b3c8880a5d051e9335044f3eb08ba30aeb39b82e01b6f591064&', description: 'Un nuevo fondo de pantalla.' }]
+            },
+            {
+                user: 'Vicente Rocha',
+                profilePic: 'https://cdn.discordapp.com/avatars/997254864801378461/02291b2d74f14df7121a9a7cfbfbfa88.webp?size=80',
+                media: [{ type: 'video', url: 'https://cdn.discordapp.com/attachments/1350274206138499075/1428198119572508784/Video-2.mp4?ex=68f1a0a6&is=68f04f26&hm=cb854207095c4204b01d6f8ddea35e9b8f41d884d75a027c0ba7f26711955889&', description: 'Día de playa 🏄‍♂️ (Video de reemplazo para link de Instagram)' }]
+            },
+            {
+                user: 'NathDann',
+                profilePic: 'https://cdn.discordapp.com/avatars/1325700534895640636/4f63a30a26623d7d94ebe4ba6228a7a4.webp?size=80',
+                media: [
+                    { type: 'image', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1426048106662723634/FB_IMG_1760066746374.jpg?ex=68f10e8b&is=68efbd0b&hm=efb4d228c70551e0ed781c8fae5bdd88022bc4f9833150c640c78a64dda2a411&', description: 'Recuerdos.' },
+                    { type: 'image', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1428110574322974720/Screenshot_20251015_140059_Facebook.jpg?ex=68f14f1d&is=68effd9d&hm=94c21f825eb5d269bb16060259b87a60c3522258da052e3d47f101856007dd73&', description: 'Facebook memories.' }
+                ]
+            },
+            {
+                user: 's3b4vivo',
+                profilePic: 'https://cdn.discordapp.com/avatars/484119016328134671/41014baa15fa9c772fad3ab4d5620466.webp?size=80',
+                media: [
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427344489386606763/MR._WORLDWIDE_gemes.mp4?ex=68f128a5&is=68efd725&hm=5eb535e36f203319109c9928f4971144a7e0799189c1ea045f15531a054724a9&', description: 'Mr. Worldwide!' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427344490556952776/Gemes_Cholas.mp4?ex=68f128a5&is=68efd725&hm=3d62f554900d72a6f8495a872d28cddbe6fc531c3aeb5beaa9f189c97512c44f&', description: 'Gemes Cholas' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427344492075155558/teffy_KO.mp4?ex=68f128a5&is=68efd725&hm=8a140a678fa082f074a130f2577f6aaf0e94fbcf78a6aa0dbe28b4fd6bc84ad6&', description: 'Teffy KO' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427344493954465842/Cuphead_gemes.mp4?ex=68f128a6&is=68efd726&hm=7057bfb1e93b5e3ddeac435d4f9f62f199ac533a3cdbdc2e858e07e1cda31cc0&', description: 'Cuphead!' }
+                ]
+            },
+            {
+                user: 'Theporkman',
+                profilePic: 'https://cdn.discordapp.com/avatars/1274982530201686049/9a669551ed53c92119725cf4b11e1ac0.webp?size=80',
+                media: [
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431562198253608/InShot_20251012_105420186.mp4?ex=68f0d0fc&is=68ef7f7c&hm=38031bcc37b673b3bfb74c6df05cc080bd061c1a21db4af559bfe59c7cfdd992&', description: 'Video 1' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431562990850239/InShot_20251012_105232323.mp4?ex=68f0d0fd&is=68ef7f7d&hm=0eb5886ae83dd645f0c502ed1fae82a62dbf9defa0a5fb5d15f0d4a4f07f1f2e&', description: 'Video 2' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431563582373949/InShot_20251012_103534889.mp4?ex=68f0d0fd&is=68ef7f7d&hm=15903abf649a41544e857018817cf3f77ae38a9f9e89b72c83fe09f9403e93d1&', description: 'Video 3' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431564488216606/InShot_20251012_103114379.mp4?ex=68f0d0fd&is=68ef7f7d&hm=2251a25f1b6d944c59df05e7eb925f8002079f263b9cfdbcd1b2131eaeaa1b33&', description: 'Video 4' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431565058637855/InShot_20251012_102550578.mp4?ex=68f0d0fd&is=68ef7f7d&hm=691f7f699a26d73ef01fe353951eb3292886de4362ea6b1bc23df9a8e4f5730e&', description: 'Video 5' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431565645975592/InShot_20251012_102156589.mp4?ex=68f0d0fd&is=68ef7f7d&hm=4df51e0a5eab1b1594e381f475f663b05cee3418c021cfa95742b204cbe31bbf&', description: 'Video 6' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431566556266667/InShot_20251012_101731647.mp4?ex=68f0d0fd&is=68ef7f7d&hm=d0d12eef4e4bbc3ff5135368b4ed877f411392cad49bde80d52830594f9639bf&', description: 'Video 7' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431567042547732/InShot_20251012_101428086.mp4?ex=68f0d0fd&is=68ef7f7d&hm=e7ff72046803b3fe122e8e1a1548d21b70542bde60a1232fca2a0385b5af6794&', description: 'Video 8' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431567877476362/InShot_20251012_100000345.mp4?ex=68f0d0fe&is=68ef7f7e&hm=6c1915825b5da84bc772ccd685cfef3d5f386d0bde26175d33f5ba222c79545e&', description: 'Video 9' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431568364011581/InShot_20251012_095757795.mp4?ex=68f0d0fe&is=68ef7f7e&hm=2324bfeebd5111dc7eae0cd2b69a13de6fa204b5fbdb5c18f15c25e2eb56ad39&', description: 'Video 10' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427431761478156368/InShot_20251012_095530137.mp4?ex=68f0d12c&is=68ef7fac&hm=50f0d8c02ad2b4b6aa2b767370bb88ec508fd11572254a39d973d3589f621a59&', description: 'Video 11' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427432134712234150/AQO4MW5akbzi9C_2wbSCU8lU2uxICH15BC0Oq6N2szxNv9zL5lVq-G5x2f4F4_k5cCywbFB_2FIiggFFJaekWcoUlFRCPpuT-7yXBo0.mp4?ex=68f0d185&is=68ef8005&hm=b4c3988e94ed423d1dda21421b298207165feb8858a37beab754f82c6f75b32f&', description: 'Video 12' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427432312865296455/InShot_20251013_110329095.mp4?ex=68f0d1af&is=68ef802f&hm=7d497d2aa1de7101f52e25705d4a9745b585e9e54ad971aa271f9e7d9bcbdd2e&', description: 'Video 13' }
+                ]
+            },
+            {
+                user: 'Rub0acklt',
+                profilePic: 'https://cdn.discordapp.com/avatars/397944376556519425/220bcd4210045810f42c4edf729e435c.webp?size=80',
+                media: [{ type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1427849197251596340/59e19401aae5f89507a70cd8060a09f4.mp4?ex=68f10470&is=68efb2f0&hm=0e41667fc2540d228dcb210c7627d1d44fd8502eac609a71b19c4ff4c975e755&', description: 'Animación' }]
+            },
+            {
+                user: 'LUHPZA',
+                profilePic: 'https://cdn.discordapp.com/avatars/808501736410054677/37c997f890f4b16c8fb2bb7377357191.webp?size=80',
+                media: [
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1428148001947385907/InShot_20251013_170112991.mp4?ex=68f171f9&is=68f02079&hm=392a6512005e3e8e186fbedda93c056993718693cc2cc4ddb48d9d337e3f7f3c&', description: 'Clip de Lujo' },
+                    { type: 'image', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1428148080544579584/GIF-250924_230534_1.gif?ex=68f1720c&is=68f0208c&hm=4da98d2af49375ca200190f5b082619babb24af7f4669fd24113a793cef910c3&', description: 'GIF animado' },
+                    { type: 'video', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1428148135363870851/InShot_20251012_2245216862.mp4?ex=68f17219&is=68f02099&hm=633d84d1ec5b366603984d9cba5b767b5afec3d7e5ff09da6038330f11a22848&', description: 'Otro video' },
+                    { type: 'image', url: 'https://cdn.discordapp.com/attachments/960621081436225557/1428157011501125734/GIF-251015_200545.gif?ex=68f17a5d&is=68f028dd&hm=41180b02c148593f7ad25614ef7abab9571222ec38a4b7f0a56ee6f16aa0dfa7&', description: 'Segundo GIF' }
+                ]
+            }
+        ];
+
+        const mediaData = usersData.flatMap(user =>
+            user.media.map(item => ({...item, user: user.user, profilePic: user.profilePic }))
+        );
+
+        const mediaFeed = document.getElementById('media-feed');
+        const unmuteOverlay = document.getElementById('unmute-overlay');
+        let hideUITimer = null;
+
+        mediaData.forEach(data => {
+            const mediaItem = document.createElement('div');
+            mediaItem.className = 'media-item';
+
+            let mediaElement;
+            if (data.type === 'video') {
+                mediaElement = document.createElement('video');
+                mediaElement.loop = true;
+                mediaElement.muted = true;
+                mediaElement.playsInline = true;
+                mediaElement.addEventListener('click', () => {
+                    if (mediaElement.paused) mediaElement.play();
+                    else mediaElement.pause();
+                });
+            } else {
+                mediaElement = document.createElement('img');
+            }
+            mediaElement.src = data.url;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'absolute bottom-20 left-0 p-4 text-white overlay-content w-full interactive-ui';
+            overlay.innerHTML = `<div class="flex items-center"><div class="w-10 h-10 bg-gray-400 rounded-full mr-3 bg-cover bg-center" style="background-image: url('${data.profilePic}')"></div><div><h3 class="font-bold text-lg">${data.user}</h3></div></div>`;
+
+            const controls = document.createElement('div');
+            controls.className = 'absolute bottom-20 right-0 p-4 flex flex-col items-center space-y-4 text-white overlay-content interactive-ui';
+            
+            mediaItem.appendChild(mediaElement);
+            mediaItem.appendChild(overlay);
+            
+            if (data.type === 'video') {
+                const volumeIconSVG = `<svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4a1 1 0 000 2v4a1 1 0 102 0V6a1 1 0 00-2 0zm4 0a1 1 0 000 2v4a1 1 0 102 0V6a1 1 0 00-2 0zm-2-3a1 1 0 00-1 1v10a1 1 0 102 0V2a1 1 0 00-1-1zM3 5a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1zm13 0a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1z"></path></svg>`;
+                const volumeControlContainer = document.createElement('div');
+                volumeControlContainer.className = 'volume-control-container text-center';
+                volumeControlContainer.innerHTML = `
+                    ${volumeIconSVG}
+                    <div class="volume-slider">
+                        <input type="range" min="0" max="1" step="0.01" value="0.5" class="volume-bar">
+                    </div>
+                `;
+                controls.appendChild(volumeControlContainer);
+                
+                const volumeBar = volumeControlContainer.querySelector('.volume-bar');
+                volumeBar.addEventListener('input', (e) => {
+                    mediaElement.volume = e.target.value;
+                    mediaElement.muted = e.target.value === '0';
+                });
+
+                const progressBarContainer = document.createElement('div');
+                progressBarContainer.className = 'progress-bar-container interactive-ui';
+                const progressBar = document.createElement('input');
+                progressBar.type = 'range';
+                progressBar.className = 'progress-bar';
+                progressBar.value = 0;
+                progressBarContainer.appendChild(progressBar);
+                mediaItem.appendChild(progressBarContainer);
+
+                mediaElement.addEventListener('loadedmetadata', () => progressBar.max = mediaElement.duration);
+                mediaElement.addEventListener('timeupdate', () => progressBar.value = mediaElement.currentTime);
+                progressBar.addEventListener('input', () => mediaElement.currentTime = progressBar.value);
+            }
+
+            mediaItem.appendChild(controls);
+            
+            const resetUITimer = () => {
+                clearTimeout(hideUITimer);
+                mediaItem.querySelectorAll('.interactive-ui').forEach(el => el.classList.remove('fade-out'));
+                hideUITimer = setTimeout(() => {
+                    mediaItem.querySelectorAll('.interactive-ui').forEach(el => el.classList.add('fade-out'));
+                }, 2000);
+            };
+            mediaItem.addEventListener('pointermove', resetUITimer);
+            mediaItem.addEventListener('pointerdown', resetUITimer);
+            
+            mediaFeed.appendChild(mediaItem);
+        });
+
+        unmuteOverlay.addEventListener('click', () => {
+            unmuteOverlay.style.display = 'none';
+            document.querySelectorAll('video').forEach(video => {
+                video.muted = false;
+                const volumeBar = video.closest('.media-item').querySelector('.volume-bar');
+                if(volumeBar) video.volume = volumeBar.value;
+            });
+        }, { once: true });
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const video = entry.target.querySelector('video');
+                if (video) {
+                    if (entry.isIntersecting) {
+                        video.play().catch(e => console.log("Reproducción automática necesita interacción.", e));
+                        entry.target.dispatchEvent(new Event('pointermove')); // Activar UI al scrollear
+                    } else {
+                        video.pause();
+                    }
+                }
+            });
+        }, { threshold: 0.8 });
+
+        document.querySelectorAll('.media-item').forEach(item => observer.observe(item));
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 355 585" aria-labelledby="title">
+	<defs>
+		<filter id="a" x="-.138" y="-.013" width="1.277" height="1.026" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="2.801"/>
+		</filter>
+		<filter id="b" x="-.42" y="-.087" width="1.841" height="1.174" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="2.627"/>
+		</filter>
+		<filter id="c" x="-.165" y="-.028" width="1.331" height="1.056" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="1.835"/>
+		</filter>
+	</defs>
+	<path d="M267.22 202.34h16.218a25.344 25.344 0 0 1 25.344 25.344v460.95a25.344 25.344 0 0 1-25.344 25.344H267.22a25.344 25.344 0 0 1-25.344-25.344v-460.95a25.344 25.344 0 0 1 25.344-25.344" fill="#b3b3b3" transform="matrix(.83 0 0 .83 -80 -170)"/>
+	<path d="M125.72 226.84c-2.436 0-4.805.364-7.031 1h3.562a25.344 25.344 0 0 1 25.344 25.344v460.94c0 11.605-7.737 21.346-18.344 24.375h12.656c14.041 0 25.375-11.303 25.375-25.344v-460.97c0-14.041-11.334-25.344-25.375-25.344z" fill="#999" filter="url(#a)" transform="matrix(.83 0 0 .83 -80 -170) matrix(.92779 0 0 .99051 149.6 -19.445)"/>
+	<path d="M241.91 688.33h66.74v27.55h-66.74z" transform="matrix(.83 0 0 .83 -80 -170)"/>
+	<path d="M245.9 767.131h58.75v-52.795H245.9z" transform="matrix(.83 0 0 .83 -80 -170)"/>
+	<path d="M261.02 831.85h30c0-22.449 13.625-43.41 13.625-65.86h-58.75c0 22.45 15.125 43.411 15.125 65.86" transform="matrix(.83 0 0 .83 -80 -170)"/>
+	<path d="M276.67 862.8c-12.4-11.282-12.4-20.568-12.4-32.95l12.4-.224 11.6.224c0 12.381 0 21.667-11.6 32.95" transform="matrix(.83 0 0 .83 -80 -170)"/>
+	<path d="M144.58 739.84v72.562h15V739.84z" transform="matrix(.83 0 0 .83 -80 -170) matrix(1 0 0 .29385 141.7 473.97)" fill="#4d4d4d" filter="url(#b)"/>
+	<path d="M146.37 741.93v70.457h-.031c-.448 29.385-13.594 56.937-13.594 86.387h13c0-29.45 13.146-57.002 13.594-86.387h.031V741.93z" transform="matrix(.83 0 0 .83 -80 -170) matrix(.71343 0 0 .72621 182.88 176.57)" fill="#4d4d4d" filter="url(#c)"/>
+</svg>
